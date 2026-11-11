@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>এক্সপ্লোর বাংলাদেশ — পুরো বাংলাদেশ, এক প্ল্যানেই</title>
+<meta name="description" content="৬৪ জেলার ভ্রমণ গাইড ও AI ট্রিপ প্ল্যানার। কোথায় যাবেন বলুন, দিন ধরে রুট, খরচ আর থাকার জায়গা সাজিয়ে দিচ্ছি।">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#03190f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://img.explorebangladesh.xyz">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@300..700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="https://img.explorebangladesh.xyz/p/536984ee/1920.webp" fetchpriority="high">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.css">
+<link rel="stylesheet" href="assets/css/base.css?v=9">
+<link rel="stylesheet" href="assets/css/home.css?v=9">
+</head>
+<body class="home" data-page="home">
+
+<div class="preloader" aria-hidden="true">
+  <div><div class="pre-sun"></div><p>এক্সপ্লোর বাংলাদেশ<small>Explore Bangladesh</small></p></div>
+</div>
+
+<!-- shared SVG symbols -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="palm" viewBox="0 0 60 120">
+      <path d="M29 120C30 90 27 60 31 34" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <g fill="currentColor">
+        <path d="M31 34C20 22 8 22 0 30c10-4 22-2 31 4Z"/><path d="M31 34c11-12 23-12 29-2-10-5-20-4-29 2Z"/>
+        <path d="M31 34C24 16 14 8 4 8c10 4 20 12 27 26Z"/><path d="M31 34c5-18 15-26 25-24-10 3-18 10-25 24Z"/>
+        <path d="M31 34C29 18 30 6 34 0c1 10 0 22-3 34Z"/><path d="M31 34c-13 0-23 6-27 16 8-8 18-12 27-16Z"/><path d="M31 34c13 0 21 8 25 18-8-9-16-14-25-18Z"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+
+<main id="main">
+
+<!-- ================= HERO + PLANNER ================= -->
+<section class="hero" id="top">
+  <div class="hero-media" aria-hidden="true">
+    <img src="https://img.explorebangladesh.xyz/p/536984ee/1920.webp" alt="" fetchpriority="high">
+  </div>
+  <div class="hero-shade" aria-hidden="true"></div>
+  <div class="hero-mist m1" aria-hidden="true"></div>
+  <div class="hero-mist m2" aria-hidden="true"></div>
+  <div class="hero-birds" aria-hidden="true">
+    <svg class="b b1"><use href="#bird"/></svg><svg class="b b2"><use href="#bird"/></svg><svg class="b b3"><use href="#bird"/></svg><svg class="b b4"><use href="#bird"/></svg><svg class="b b5"><use href="#bird"/></svg>
+  </div>
+
+  <div class="wrap hero-inner">
+    <div class="hero-copy" data-lines>
+      <span class="eyebrow" data-reveal style="--d:1500ms">৬৪ জেলার ট্রিপ প্ল্যানার <i lang="en">travel, simply planned</i></span>
+      <h1 class="display">
+        <span class="ln" style="--i:0;--d:1500ms"><span>পুরো বাংলাদেশ,</span></span>
+        <span class="ln" style="--i:1;--d:1500ms"><span><em>এক প্ল্যানেই</em></span></span>
+      </h1>
+      <p class="hero-lede" data-reveal style="--d:1900ms">পাহাড় থেকে সমুদ্র, শহর থেকে গ্রাম। কোথায় যাবেন শুধু সেটুকু বলুন — দিন, রুট আর খরচ আমরা সাজিয়ে দিচ্ছি।</p>
+    </div>
+
+    <form class="planner" id="planner" action="plan.html" method="get" novalidate data-reveal style="--d:2000ms">
+      <div class="pl-head">
+        <span class="pl-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.200 6.600L21 11l-6.800 2.400L12 20l-2.200-6.600L3 11l6.800-2.400z" fill="currentColor"/></svg>AI ট্রিপ প্ল্যান</span>
+        <span class="pl-step" lang="en">in three small answers</span>
+      </div>
+
+      <div class="pl-block pl-dest">
+        <label class="pl-label" for="pl-q"><b>১</b> কোথায় যেতে চান?</label>
+        <div class="pl-chipbox" id="pl-chipbox">
+          <ul class="pl-chips" id="pl-chips" aria-label="বেছে নেওয়া জায়গা"></ul>
+          <input id="pl-q" type="text" autocomplete="off" inputmode="search" placeholder="জেলা বা জায়গার নাম — যেমন সিলেট, সাজেক" role="combobox" aria-expanded="false" aria-controls="pl-suggest" aria-autocomplete="list">
+        </div>
+        <ul class="pl-suggest" id="pl-suggest" role="listbox" data-lenis-prevent hidden></ul>
+        <p class="pl-error" id="pl-error" role="alert" hidden>অন্তত একটা জায়গা বেছে নিন।</p>
+        <div class="pl-popular" id="pl-popular" aria-label="জনপ্রিয় জায়গা"></div>
+      </div>
+
+      <div class="pl-grid">
+        <div class="pl-block">
+          <label class="pl-label" for="pl-from"><b>২</b> কোথা থেকে রওনা</label>
+          <div class="pl-select"><select id="pl-from" name="from"></select></div>
+        </div>
+        <div class="pl-block">
+          <span class="pl-label" id="pl-mode-l">কীসে যাবেন</span>
+          <div class="pl-seg" role="radiogroup" aria-labelledby="pl-mode-l" id="pl-mode"></div>
+        </div>
+        <div class="pl-block">
+          <span class="pl-label" id="pl-days-l"><b>৩</b> হাতে কত দিন</span>
+          <div class="pl-stepper" data-step="days" data-min="1" data-max="15" role="group" aria-labelledby="pl-days-l">
+            <button type="button" data-dir="-1" aria-label="এক দিন কম">−</button><output>৩ দিন</output><button type="button" data-dir="1" aria-label="এক দিন বেশি">+</button>
+          </div>
+        </div>
+        <div class="pl-block">
+          <span class="pl-label" id="pl-people-l">কতজন</span>
+          <div class="pl-stepper" data-step="people" data-min="1" data-max="20" role="group" aria-labelledby="pl-people-l">
+            <button type="button" data-dir="-1" aria-label="একজন কম">−</button><output>২ জন</output><button type="button" data-dir="1" aria-label="একজন বেশি">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-gold pl-go" type="submit">
+        <span>প্ল্যান তৈরি করুন</span><span class="arr" aria-hidden="true">→</span>
+      </button>
+      <p class="pl-note"><span>✓ সাইন‑ইন লাগে না</span><span>✓ পুরোপুরি ফ্রি</span><span>✓ আসল রাস্তার দূরত্ব</span></p>
+    </form>
+  </div>
+
+  <a class="scroll-cue" href="#journey" data-reveal style="--d:2400ms"><span>নৌকায় উঠুন, গল্পটা শুরু হোক</span><i aria-hidden="true"></i></a>
+</section>
+
+<!-- ================= THE JOURNEY: one day, one boat ================= -->
+<section class="journey" id="journey" aria-label="একদিনে বাংলাদেশ — ভোর থেকে রাত">
+  <div class="jr-stage">
+    <div class="jr-sky" aria-hidden="true"></div>
+    <div class="jr-stars" aria-hidden="true"></div>
+    <div class="jr-moon" aria-hidden="true"></div>
+    <div class="jr-sun" aria-hidden="true"></div>
+
+    <svg class="jr-hills far" viewBox="0 0 2400 300" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0 300V200C150 140 250 120 400 170S650 90 820 150s280 50 430-20 250-50 450 30 300-50 450-10 200 40 250 20v130Z"/>
+    </svg>
+    <svg class="jr-hills near" viewBox="0 0 2400 220" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <g fill="currentColor" color="inherit">
+        <use href="#palm" x="150" y="40" width="60" height="120"/><use href="#palm" x="200" y="62" width="48" height="96"/>
+        <use href="#palm" x="620" y="52" width="56" height="112"/>
+        <path d="M700 150l34-26 34 26v22h-68Z"/>
+        <use href="#palm" x="1090" y="34" width="62" height="124"/><use href="#palm" x="1150" y="60" width="46" height="92"/><use href="#palm" x="1040" y="66" width="44" height="88"/>
+        <use href="#palm" x="1560" y="50" width="58" height="116"/>
+        <path d="M1640 152l30-22 30 22v20h-60Z"/>
+        <use href="#palm" x="2010" y="38" width="60" height="120"/><use href="#palm" x="2070" y="64" width="46" height="92"/>
+      </g>
+      <path d="M0 220v-66c200-20 380-10 600 0s400-30 600-10 500 15 700-5 350 5 500 15v66Z"/>
+    </svg>
+
+    <div class="jr-birds" aria-hidden="true">
+      <svg class="b b1"><use href="#bird"/></svg><svg class="b b2"><use href="#bird"/></svg><svg class="b b3"><use href="#bird"/></svg>
+    </div>
+    <div class="jr-flies" aria-hidden="true"></div>
+
+    <div class="jr-top wrap">
+      <span class="eyebrow">একটা দিন · একটা নৌকা <i lang="en">dawn to dusk</i></span>
+      <span class="jr-count"><b id="jr-n">০১</b><i>/ ০৫</i></span>
+    </div>
+
+    <div class="wrap jr-grid">
+      <div class="jr-texts" id="jr-texts"></div>
+      <div class="jr-arch" id="jr-arch"><div class="jr-arch-in"></div></div>
+    </div>
+
+    <div class="jr-outro" id="jr-outro">
+      <span class="eyebrow">রাত <i lang="en">nightfall</i></span>
+      <h2 class="display">নৌকায় বাতি জ্বলে।<br>কালকের ভোরটা <em>কোথায়</em> দেখবেন?</h2>
+      <p>এই পাঁচটা জায়গা শুধু শুরু। ৬৪ জেলায় আরও ৩৪৯টা ঘোরার জায়গা অপেক্ষা করছে।</p>
+      <a class="btn btn-gold" href="#top" data-focus-planner data-magnetic><span>নিজের ট্রিপ সাজান</span><span class="arr" aria-hidden="true">→</span></a>
+    </div>
+
+    <div class="jr-water" aria-hidden="true">
+      <svg class="jr-wave w1" viewBox="0 0 2400 160" preserveAspectRatio="none"><path d="M0 22Q150 0 300 22T600 22T900 22T1200 22T1500 22T1800 22T2100 22T2400 22V160H0Z"/></svg>
+      <div class="jr-boat" id="jr-boat">
+        <svg viewBox="0 0 220 130">
+          <ellipse class="glow" cx="34" cy="62" rx="26" ry="26"/>
+          <line x1="150" y1="6" x2="205" y2="112" stroke="#2b1a10" stroke-width="3" stroke-linecap="round"/>
+          <g fill="#20140c"><circle cx="172" cy="34" r="6.500"/><path d="M165 44h14l3 30h-6l-3 14h-4l-3-14h-5Z"/><path d="M160 30l12-12 12 12Z"/></g>
+          <path d="M70 92Q72 58 104 58t36 32Z" fill="#b98a4a"/>
+          <path d="M80 90Q82 66 104 66t26 22M92 91V60M116 91V60M72 78h66" fill="none" stroke="#7a5526" stroke-width="1.600"/>
+          <path d="M6 68Q110 106 216 56 172 116 110 116 44 116 6 68Z" fill="#2b1a10"/>
+          <path d="M22 80Q110 108 198 72" fill="none" stroke="#c8a25a" stroke-width="2" opacity=".7"/>
+          <line x1="34" y1="74" x2="34" y2="56" stroke="#2b1a10" stroke-width="2"/>
+          <circle class="lamp" cx="34" cy="56" r="4.500"/>
+        </svg>
+      </div>
+      <svg class="jr-wave w2" viewBox="0 0 2400 160" preserveAspectRatio="none"><path d="M0 26Q100 6 200 26T400 26T600 26T800 26T1000 26T1200 26T1400 26T1600 26T1800 26T2000 26T2200 26T2400 26V160H0Z"/></svg>
+    </div>
+    <nav class="jr-marks" id="jr-marks" aria-label="দিনের সময়"></nav>
+  </div>
+</section>
+
+<!-- ================= READY-MADE TRIPS: horizontal gallery ================= -->
+<section class="trips" id="trips">
+  <div class="tr-sticky">
+    <div class="wrap tr-head" data-lines>
+      <div>
+        <span class="eyebrow" data-reveal>রেডিমেড ট্রিপ <i lang="en">curated routes</i></span>
+        <h2 class="display"><span class="ln" style="--i:0"><span>সাজানো ট্রিপ দিয়ে</span></span><span class="ln" style="--i:1"><span><em>শুরু করুন</em></span></span></h2>
+      </div>
+      <div class="tr-side" data-reveal style="--d:200ms">
+        <p>জনপ্রিয় রুট, দিন আর খরচ আগে থেকেই হিসাব করা। খুলে নিজের মতো বদলে নিন।</p>
+        <a class="link-arrow" href="trips.html">সব রেডিমেড ট্রিপ <span class="arr">→</span></a>
+      </div>
+    </div>
+    <div class="tr-viewport" id="tr-viewport"><div class="tr-track" id="tr-track"></div></div>
+    <div class="wrap tr-foot"><div class="tr-bar"><i id="tr-bar"></i></div><span class="tr-hint" lang="en">scroll</span></div>
+  </div>
+</section>
+
+<!-- ================= SIX SEASONS ================= -->
+<section class="seasons" id="seasons">
+  <div class="wrap ss-grid">
+    <div class="ss-left" data-lines>
+      <span class="eyebrow" data-reveal>ষড়ঋতুর দেশ <i lang="en">six seasons</i></span>
+      <h2 class="display"><span class="ln" style="--i:0"><span>এখন কোথায়</span></span><span class="ln" style="--i:1"><span><em>যাবেন</em></span></span></h2>
+      <div class="ss-list" id="ss-list" role="tablist" aria-label="ঋতু"></div>
+    </div>
+    <div class="ss-right">
+      <div class="ss-mood" id="ss-mood" aria-live="polite"></div>
+      <div class="ss-cards" id="ss-cards"></div>
+      <a class="link-arrow ss-all" href="seasons.html">সব ঋতুর জায়গা <span class="arr">→</span></a>
+    </div>
+  </div>
+  <div class="ss-ghost display" id="ss-ghost" aria-hidden="true"></div>
+</section>
+
+<!-- ================= FOOD ================= -->
+<section class="foods" id="foods">
+  <div class="wrap fd-head" data-lines>
+    <div>
+      <span class="eyebrow" data-reveal>পথে কী খাবেন <i lang="en">taste of the road</i></span>
+      <h2 class="display"><span class="ln" style="--i:0"><span>প্রতিটা জেলার</span></span><span class="ln" style="--i:1"><span><em>নিজের স্বাদ</em></span></span></h2>
+    </div>
+    <a class="link-arrow" href="discover.html?type=foods" data-reveal>সব খাবার <span class="arr">→</span></a>
+  </div>
+  <div class="fd-marquee" id="fd-marquee"><div class="fd-row" id="fd-row"></div></div>
+</section>
+
+<!-- ================= MAP ================= -->
+<section class="mapsec" id="map">
+  <div class="wrap mp-grid">
+    <div class="mp-copy" data-lines>
+      <span class="eyebrow" data-reveal>৮ বিভাগ · ৬৪ জেলা <i lang="en">the whole country</i></span>
+      <h2 class="display"><span class="ln" style="--i:0"><span>প্রতিটা জেলার</span></span><span class="ln" style="--i:1"><span><em>নিজের গল্প</em></span></span></h2>
+      <p data-reveal style="--d:150ms">সিলেটের চা‑বাগান থেকে খুলনার ম্যানগ্রোভ — ম্যাপে যেকোনো জেলায় ট্যাপ করুন। দেখুন কোথায় যাবেন, কী খাবেন, কী মিস করা চলবে না।</p>
+      <dl class="mp-stats" id="mp-stats">
+        <div data-reveal><dt data-count="64">০</dt><dd>জেলা</dd></div>
+        <div data-reveal style="--d:80ms"><dt data-count="349">০</dt><dd>ঘোরার জায়গা</dd></div>
+        <div data-reveal style="--d:160ms"><dt data-count="205">০</dt><dd>খাবার</dd></div>
+        <div data-reveal style="--d:240ms"><dt data-count="157">০</dt><dd>অচেনা জায়গা</dd></div>
+        <div data-reveal style="--d:320ms"><dt data-count="76">০</dt><dd>ঐতিহ্য</dd></div>
+      </dl>
+      <div class="mp-actions" data-reveal style="--d:200ms">
+        <a class="btn btn-gold" href="explore.html" data-magnetic><span>জেলা ঘুরে দেখুন</span><span class="arr">→</span></a>
+        <a class="btn btn-ghost" href="map.html">নিজের ভ্রমণ ম্যাপ বানান</a>
+      </div>
+    </div>
+    <div class="mp-map" id="mp-map">
+      <div class="mp-tip" id="mp-tip" aria-hidden="true"><b></b><span>জেলার গাইড খুলুন →</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CLOSING ================= -->
+<section class="closing">
+  <div class="cl-sun" aria-hidden="true"></div>
+  <div class="wrap" data-lines>
+    <span class="eyebrow" data-reveal>এবার আপনার পালা <i lang="en">your turn</i></span>
+    <h2 class="display"><span class="ln" style="--i:0"><span>ব্যাগ গোছান।</span></span><span class="ln" style="--i:1"><span>প্ল্যান <em>আমরা</em> করছি।</span></span></h2>
+    <a class="btn btn-gold" href="#top" data-focus-planner data-magnetic data-reveal style="--d:300ms"><span>ট্রিপ প্ল্যান শুরু করুন</span><span class="arr">→</span></a>
+  </div>
+</section>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+<script src="assets/js/districts.js?v=9"></script>
+<script src="assets/js/data.js?v=9"></script>
+<script src="assets/js/chrome.js?v=9"></script>
+<script src="assets/js/core.js?v=9"></script>
+<script src="assets/js/planner.js?v=9"></script>
+<script src="assets/js/home.js?v=9"></script>
+</body>
+</html>

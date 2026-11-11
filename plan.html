@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>আপনার ট্রিপ প্ল্যান — এক্সপ্লোর বাংলাদেশ</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#03190f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://img.explorebangladesh.xyz">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@300..700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.css">
+<link rel="stylesheet" href="assets/css/base.css?v=9">
+<link rel="stylesheet" href="assets/css/plan.css?v=9">
+</head>
+<body class="plan" data-page="plan">
+
+<!-- "crafting your trip" moment -->
+<div class="crafting" id="crafting" role="status" aria-live="polite">
+  <div class="cr-in">
+    <svg class="cr-route" viewBox="0 0 520 120" aria-hidden="true">
+      <path id="cr-path" d="M10 90C90 20 150 110 240 60S400 10 510 70" fill="none" stroke="rgba(231,211,164,.35)" stroke-width="1.5" stroke-dasharray="3 7" stroke-linecap="round"/>
+      <path class="cr-draw" d="M10 90C90 20 150 110 240 60S400 10 510 70" fill="none" stroke="#e7d3a4" stroke-width="2" stroke-linecap="round" pathLength="1"/>
+      <circle r="6" fill="#e2323f"><animateMotion dur="2.4s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".65 0 .35 1" path="M10 90C90 20 150 110 240 60S400 10 510 70"/></circle>
+      <circle cx="10" cy="90" r="4" fill="#e7d3a4"/><circle cx="510" cy="70" r="4" fill="none" stroke="#e7d3a4" stroke-width="1.5"/>
+    </svg>
+    <p class="cr-title">আপনার ট্রিপ সাজানো হচ্ছে</p>
+    <ul class="cr-steps">
+      <li style="--i:0">রুট মেলানো হচ্ছে</li>
+      <li style="--i:1">দিন ধরে ভাগ করা হচ্ছে</li>
+      <li style="--i:2">খরচের হিসাব হচ্ছে</li>
+    </ul>
+  </div>
+</div>
+
+
+
+<main id="main">
+  <!-- summary -->
+  <section class="pn-hero">
+    <div class="pn-hero-bg" id="pn-hero-bg" aria-hidden="true"></div>
+    <div class="wrap">
+      <a class="pn-back" href="index.html#top"><span aria-hidden="true">←</span> জায়গা বদলান</a>
+      <span class="eyebrow">আপনার ট্রিপ প্ল্যান <i lang="en">made for you</i></span>
+      <h1 class="display" id="pn-route"></h1>
+      <ul class="pn-facts" id="pn-facts"></ul>
+      <div class="pn-actions">
+        <button class="btn btn-gold" id="pn-share" type="button"><span>লিংক শেয়ার করুন</span></button>
+        <button class="btn btn-ghost" id="pn-print" type="button">প্রিন্ট / PDF</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- empty state -->
+  <section class="pn-empty" id="pn-empty" hidden>
+    <div class="wrap">
+      <h2 class="display">এখনও কোনো জায়গা বেছে নেননি</h2>
+      <p>হোম পেজে গিয়ে বলুন কোথায় যেতে চান — প্ল্যান এখানেই তৈরি হয়ে যাবে।</p>
+      <a class="btn btn-dark" href="index.html#top"><span>ট্রিপ প্ল্যান শুরু করুন</span><span class="arr">→</span></a>
+    </div>
+  </section>
+
+  <section class="pn-body" id="pn-body">
+    <div class="wrap pn-grid">
+      <aside class="pn-side">
+        <div class="pn-map" id="pn-map"></div>
+        <ol class="pn-legend" id="pn-legend"></ol>
+      </aside>
+
+      <div class="pn-main">
+        <p class="pn-note" id="pn-note" hidden></p>
+        <div class="pn-days" id="pn-days"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- fine-tune + cost -->
+  <section class="pn-tune" id="pn-tune">
+    <div class="wrap pn-tune-grid">
+      <div class="pn-refine">
+        <span class="eyebrow">নিজের মতো সাজান <i lang="en">fine-tune</i></span>
+        <h2 class="display">ট্রিপটা <em>আপনার</em> মতো করুন</h2>
+        <p class="pn-refine-lede">যা বদলাবেন, ওপরের প্ল্যান আর খরচ সঙ্গে সঙ্গে নতুন করে হিসাব হবে।</p>
+
+        <div class="rf-grid">
+          <div class="rf"><span class="rf-l">হাতে কত দিন</span><div class="rf-step" data-k="days" data-min="1" data-max="15"><button type="button" data-dir="-1" aria-label="কম">−</button><output></output><button type="button" data-dir="1" aria-label="বেশি">+</button></div></div>
+          <div class="rf"><span class="rf-l">কতজন</span><div class="rf-step" data-k="people" data-min="1" data-max="20"><button type="button" data-dir="-1" aria-label="কম">−</button><output></output><button type="button" data-dir="1" aria-label="বেশি">+</button></div></div>
+          <div class="rf rf-wide"><span class="rf-l">কীসে যাবেন</span><div class="rf-seg" data-k="mode" data-opts="bus:বাস,car:গাড়ি,bike:বাইক"></div></div>
+          <div class="rf rf-wide"><span class="rf-l">দিনে কত ঘণ্টা ঘুরবেন</span><div class="rf-seg" data-k="hours" data-opts="6:৬ ঘণ্টা,8:৮ ঘণ্টা,10:১০ ঘণ্টা,12:১২ ঘণ্টা"></div></div>
+          <div class="rf rf-wide"><span class="rf-l">খাওয়াদাওয়া</span><div class="rf-seg" data-k="food" data-opts="budget:সাধারণ হোটেল,mid:ভালো রেস্টুরেন্ট,lux:অভিজাত"></div></div>
+          <div class="rf rf-wide"><span class="rf-l">থাকার জায়গা</span><div class="rf-seg" data-k="stay" data-opts="budget:সাধারণ হোটেল,mid:ভালো হোটেল,lux:অভিজাত রিসোর্ট"></div></div>
+          <label class="rf rf-wide rf-check"><input type="checkbox" id="rf-rt"><span class="rf-switch" aria-hidden="true"></span><span>শেষে আবার <b id="rf-from"></b> ফিরব</span></label>
+        </div>
+      </div>
+
+      <div class="pn-cost" id="pn-cost"></div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+<script src="assets/js/districts.js?v=9"></script>
+<script src="assets/js/data.js?v=9"></script>
+<script src="assets/js/chrome.js?v=9"></script>
+<script src="assets/js/core.js?v=9"></script>
+<script src="assets/js/plan.js?v=9"></script>
+</body>
+</html>
