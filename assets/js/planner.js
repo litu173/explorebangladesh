@@ -6,10 +6,10 @@
   if (!form) return;
 
   const D = window.EB_DISTRICTS;
-  const byId = Object.fromEntries(D.map((d) => [d.id, d]));
-  /* everything a traveller can type: named spots first, then the 64 districts */
-  const OPTIONS = EB.SPOTS.map((s) => ({ id: s.id, bn: s.bn, key: (s.bn + ' ' + s.en + ' ' + s.id).toLowerCase(), kind: 'জায়গা', where: byId[s.d].bn }))
-    .concat(D.map((d) => ({ id: d.id, bn: d.bn, key: (d.bn + ' ' + d.id.replace(/-/g, ' ')).toLowerCase(), kind: 'জেলা', where: '' })));
+  /* everything a traveller can type: the 64 districts, then every place and hidden place in the guide */
+  const OPTIONS = D.map((d) => ({ id: d.id, bn: EB.dname(d.id), key: (EB.dname(d.id) + ' ' + d.bn + ' ' + d.id.replace(/-/g, ' ')).toLowerCase(), kind: T('জেলা', 'District'), where: '', rank: 0 }))
+    .concat(Object.values(EB.guides()).filter((g) => g.type === 'place' || g.type === 'hidden')
+      .map((g) => ({ id: g.id, bn: g.t, key: (g.t + ' ' + g.id.replace(/-/g, ' ')).toLowerCase(), kind: T('জায়গা', 'Place'), where: EB.dname(g.d), rank: 1 })));
   const optById = Object.fromEntries(OPTIONS.map((o) => [o.id, o]));
 
   const KEY = 'eb-planner-v1';
@@ -23,13 +23,13 @@
 
   /* ---- from ---- */
   const from = $('#pl-from');
-  from.innerHTML = D.slice().sort((a, b) => a.bn.localeCompare(b.bn, 'bn')).map((d) => `<option value="${d.id}">${d.bn}</option>`).join('');
+  from.innerHTML = D.map((d) => [d.id, EB.dname(d.id)]).sort((a, b) => a[1].localeCompare(b[1], T('bn', 'en'))).map(([id, n]) => `<option value="${id}">${n}</option>`).join('');
   from.value = state.from;
   from.addEventListener('change', () => { state.from = from.value; save(); });
 
   /* ---- mode ---- */
   const mode = $('#pl-mode');
-  mode.innerHTML = EB.MODES.map((m) => `<button type="button" role="radio" data-id="${m.id}">${m.bn}</button>`).join('');
+  mode.innerHTML = EB.MODES.map((m) => `<button type="button" role="radio" data-id="${m.id}">${L(m.name)}</button>`).join('');
   const paintMode = () => mode.querySelectorAll('button').forEach((b) => {
     const on = b.dataset.id === state.mode;
     b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1;
@@ -46,9 +46,9 @@
   /* ---- steppers ---- */
   form.querySelectorAll('.pl-stepper').forEach((st) => {
     const k = st.dataset.step, min = +st.dataset.min, max = +st.dataset.max, out = st.querySelector('output');
-    const unit = k === 'days' ? 'দিন' : 'জন';
     const paint = (bump) => {
-      out.textContent = `${EB.bn(state[k])} ${unit}`;
+      const n = state[k];
+      out.textContent = k === 'days' ? T(`${EB.bn(n)} দিন`, `${n} day${n > 1 ? 's' : ''}`) : T(`${EB.bn(n)} জন`, `${n} ${n > 1 ? 'people' : 'person'}`);
       st.querySelector('[data-dir="-1"]').disabled = state[k] <= min;
       st.querySelector('[data-dir="1"]').disabled = state[k] >= max;
       if (bump) { out.classList.remove('bump'); void out.offsetWidth; out.classList.add('bump'); }
@@ -63,8 +63,8 @@
 
   /* ---- destinations ---- */
   function paintChips() {
-    chips.innerHTML = state.to.map((id) => `<li>${optById[id].bn}<button type="button" data-rm="${id}" aria-label="${optById[id].bn} বাদ দিন">×</button></li>`).join('');
-    q.placeholder = state.to.length ? 'আরও জায়গা যোগ করুন' : 'জেলা বা জায়গার নাম — যেমন সিলেট, সাজেক';
+    chips.innerHTML = state.to.map((id) => `<li>${optById[id].bn}<button type="button" data-rm="${id}" aria-label="${T(optById[id].bn + ' বাদ দিন', 'Remove ' + optById[id].bn)}">×</button></li>`).join('');
+    q.placeholder = state.to.length ? T('আরও জায়গা যোগ করুন', 'Add another place') : T('জেলা বা জায়গার নাম — যেমন সিলেট, সাজেক', 'A district or place — e.g. Sylhet, Sajek');
     pop.querySelectorAll('button').forEach((b) => { b.disabled = state.to.includes(b.dataset.id); });
   }
   function add(id) {
@@ -73,7 +73,7 @@
   }
   function remove(id) { state.to = state.to.filter((x) => x !== id); paintChips(); save(); }
 
-  pop.innerHTML = EB.POPULAR.map((id) => `<button type="button" data-id="${id}">${optById[id].bn}</button>`).join('');
+  pop.innerHTML = EB.POPULAR.filter((id) => optById[id]).map((id) => `<button type="button" data-id="${id}">${optById[id].bn}</button>`).join('');
   pop.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) add(b.dataset.id); });
   chips.addEventListener('click', (e) => { const b = e.target.closest('[data-rm]'); if (b) { remove(b.dataset.rm); q.focus(); } });
   box.addEventListener('click', (e) => { if (e.target === box || e.target === chips) q.focus(); });
@@ -83,11 +83,11 @@
     const term = q.value.trim().toLowerCase();
     if (!term) { close(); return; }
     shown = OPTIONS.filter((o) => !state.to.includes(o.id) && o.key.includes(term))
-      .sort((a, b) => (a.bn.startsWith(q.value.trim()) ? 0 : 1) - (b.bn.startsWith(q.value.trim()) ? 0 : 1)).slice(0, 7);
+      .sort((a, b) => ((a.key.startsWith(term) ? 0 : 2) + a.rank) - ((b.key.startsWith(term) ? 0 : 2) + b.rank)).slice(0, 7);
     active = shown.length ? 0 : -1;
     sug.innerHTML = shown.length
       ? shown.map((o, i) => `<li role="option" id="pl-o-${i}" data-id="${o.id}" aria-selected="${i === active}"><span>${o.bn}${o.where ? ` <span style="color:var(--muted);font-size:14px">· ${o.where}</span>` : ''}</span><small>${o.kind}</small></li>`).join('')
-      : '<li class="none">এই নামে কিছু পাইনি — জেলার নাম লিখে দেখুন</li>';
+      : `<li class="none">${T('এই নামে কিছু পাইনি — জেলার নাম লিখে দেখুন', 'Nothing by that name — try a district name')}</li>`;
     sug.hidden = false; q.setAttribute('aria-expanded', 'true');
     sug.style.top = box.offsetTop + box.offsetHeight + 6 + 'px';
   }

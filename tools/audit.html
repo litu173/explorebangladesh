@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Site audit</title>
+<style>body{font:15px system-ui;margin:24px}pre{white-space:pre-wrap;background:#f4f4f4;padding:12px}</style>
+<h1>Language + page audit</h1>
+<p>Loads every page in Bangla and English, scrolls through it, and lists English left on Bangla pages, Bangla left on English pages, script errors, broken images and sideways scrolling. Serve the site (<code>python3 -m http.server</code>) and open <code>/tools/audit.html</code>.</p>
+<p><label>Width <input id="w" value="1440" size="5"></label> <label>Height <input id="h" value="900" size="5"></label> <button id="go">Run</button></p>
+<pre id="out">—</pre>
+<script src="audit.js"></script>
+<script>
+const P = ['index.html', 'plan.html?from=dhaka&to=st-martins-island,sajek-valley&days=6&people=2&mode=bus', 'trips.html', 'trip.html?id=sylhet-tea-and-rivers', 'explore.html', 'district.html?id=sylhet', 'district.html?id=meherpur', 'guide.html?id=ratargul-swamp-forest', 'discover.html?type=foods', 'hotels.html', 'hotel.html?id=parjatan-motel-sylhet', 'map.html', 'seasons.html'];
+document.getElementById('go').onclick = async () => {
+  const out = document.getElementById('out'); out.textContent = 'running…';
+  const r = await runAudit(P.map((p) => '../' + p).concat(P.map((p) => '../en/' + p)), +document.getElementById('w').value, +document.getElementById('h').value);
+  const bad = r.filter((x) => x.n || x.errs.length || x.broken || x.ox);
+  out.textContent = `${r.length} pages checked, ${bad.length} with findings\n\n` + bad.map((x) => `${x.u}\n  language: ${x.bad.join(' | ') || '—'}\n  errors: ${x.errs.join(' | ') || '—'}  broken images: ${x.broken}  overflow: ${x.ox}px`).join('\n\n');
+};
+</script>

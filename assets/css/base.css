@@ -126,6 +126,11 @@ h1, h2, h3, p { margin: 0; }
 .brand .wm { display: grid; line-height: 1; }
 .brand .wm small { font-family: var(--f-latin); font-style: italic; font-size: 14px; letter-spacing: 0.06em; opacity: 0.8; }
 .brand .wm b { font-family: var(--f-latin); font-weight: 600; font-size: 21px; letter-spacing: 0.02em; }
+html[lang='bn'] .brand .wm small { font-family: var(--f-display); font-style: normal; font-size: 12.5px; letter-spacing: 0.04em; }
+html[lang='bn'] .brand .wm b { font-family: var(--f-display); font-size: 21px; letter-spacing: 0; }
+html[lang='bn'] .lang { font-family: var(--f-latin); }
+html[lang='en'] .lang { font-family: var(--f-display); letter-spacing: 0; font-size: 15px; }
+.lang-text { opacity: 0.78; }
 
 .nav { display: flex; align-items: center; gap: clamp(18px, 2.4vw, 36px); font-size: 15.5px; font-weight: 500; }
 .nav a { position: relative; padding: 6px 0; opacity: 0.86; transition: opacity 0.3s; }
@@ -190,19 +195,44 @@ h1, h2, h3, p { margin: 0; }
   60% { transform: translate(-2%, -2%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
 }
 
-/* ---------- preloader ---------- */
+/* ---------- splash (first visit of the home page) ---------- */
 .preloader {
   position: fixed; inset: 0; z-index: 300; background: var(--paddy-950); color: var(--ivory);
   display: grid; place-items: center; text-align: center;
-  animation: preOut 0.9s var(--ease-io) 2.6s forwards; /* safety net if JS never runs */
+  animation: preOut 0.9s var(--ease-io) 2.8s forwards; /* safety net if JS never runs */
 }
 .preloader.done { animation: preOut 0.9s var(--ease-io) forwards; }
-.preloader .pre-sun { width: 74px; height: 74px; border-radius: 50%; background: var(--sun); margin: 0 auto 26px; box-shadow: 0 0 60px rgba(226, 50, 63, 0.55); animation: preSun 1.4s var(--ease) both; }
-.preloader p { font-family: var(--f-display); font-size: 22px; letter-spacing: 0.02em; animation: preTxt 1.2s var(--ease) 0.25s both; }
-.preloader small { display: block; font-family: var(--f-latin); font-style: italic; font-size: 16px; color: var(--gold); margin-top: 4px; }
-@keyframes preSun { from { transform: translateY(60px) scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.pre-logo { position: relative; width: 92px; height: 92px; margin: 0 auto 22px; }
+.pre-logo img { width: 100%; height: 100%; border-radius: 26px; box-shadow: 0 24px 60px -18px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(231, 211, 164, 0.25); animation: preLogo 1.3s var(--ease) both; }
+.pre-logo::after { content: ''; position: absolute; inset: -14px; border-radius: 34px; border: 1px solid rgba(231, 211, 164, 0.35); animation: preRing 1.6s var(--ease) 0.3s both; }
+.preloader p { display: grid; gap: 2px; font-family: var(--f-display); font-weight: 500; font-size: 28px; line-height: 1.2; animation: preTxt 1.2s var(--ease) 0.35s both; }
+.preloader p small { font-size: 15px; font-weight: 400; letter-spacing: 0.24em; color: var(--gold); }
+html[lang='en'] .preloader p { font-family: var(--f-latin); font-size: 32px; }
+.pre-bar { width: 120px; height: 1px; margin: 22px auto 0; background: rgba(231, 211, 164, 0.2); overflow: hidden; }
+.pre-bar::after { content: ''; display: block; height: 100%; background: var(--gold); transform-origin: left; animation: preBar 1.5s var(--ease-io) 0.3s both; }
+@keyframes preLogo { from { transform: translateY(-40px) scale(0.6) rotate(-8deg); opacity: 0; } 60% { transform: translateY(4px) scale(1.03); opacity: 1; } to { transform: none; } }
+@keyframes preRing { from { transform: scale(0.7); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes preTxt { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes preBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes preOut { to { clip-path: inset(0 0 100% 0); visibility: hidden; } }
+/* after the first visit the home page uses the same quick wipe as every other page */
+.seen .preloader { display: none; }
+
+/* ---------- page-to-page transition: the logo veil ----------
+   leaving: .page-veil rises from the bottom; arriving: body::before (pure CSS, there from the first paint) wipes away */
+.page-veil, body::before { background: url(../img/logo.svg) center / 64px no-repeat, var(--paddy-950); }
+.page-veil { position: fixed; inset: 0; z-index: 280; clip-path: inset(100% 0 0 0); transition: clip-path 0.55s var(--ease-io); }
+.page-veil.on { clip-path: inset(0); }
+body::before { content: ''; position: fixed; inset: 0; z-index: 270; pointer-events: none; animation: pageIn 0.85s var(--ease-io) 0.22s both; }
+@keyframes pageIn { from { clip-path: inset(0); } to { clip-path: inset(0 0 100% 0); visibility: hidden; } }
+html:not(.seen) body.home::before, body.plan::before { display: none; }
+/* on a repeat visit the hero copy should not wait for a splash that no longer plays */
+.seen .hero [data-reveal], .seen .hero .ln > span { transition-delay: calc(var(--i, 0) * 110ms + 450ms) !important; }
+
+/* images fade in as they arrive instead of popping */
+img.fi:not(.ld) { opacity: 0; }
+img.fi.ld { animation: imgIn 0.8s var(--ease) both; }
+@keyframes imgIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- footer ---------- */
 .site-footer { background: var(--paddy-950); color: var(--ivory); padding: 72px 0 34px; position: relative; z-index: 2; }
@@ -221,9 +251,6 @@ h1, h2, h3, p { margin: 0; }
   .grain { display: none; }
 }
 
-/* ---------- page-to-page veil ---------- */
-.page-veil { position: fixed; inset: 0; z-index: 280; background: var(--paddy-950); clip-path: inset(100% 0 0 0); transition: clip-path 0.65s var(--ease-io); }
-.page-veil.on { clip-path: inset(0); }
 
 /* comfortable tap targets on touch screens */
 .menu-foot a { display: inline-block; padding: 8px 2px; }

@@ -21,13 +21,13 @@
 
   texts.innerHTML = J.map((c, i) => `
     <article class="jr-text" data-i="${i}">
-      <div class="jr-time" style="--k:0"><b>${c.time}</b><span>${c.clock} · ${c.region}</span></div>
-      <h2 class="display" style="--k:1"><span class="ln"><span>${c.place}</span></span></h2>
-      <p style="--k:2">${c.line}</p>
-      <a class="link-arrow" style="--k:3" href="${EB.local(c.href)}">${c.cta} <span class="arr">→</span></a>
+      <div class="jr-time" style="--k:0"><b>${L(c.time)}</b><span>${L(c.clock)} · ${L(c.region)}</span></div>
+      <h2 class="display" style="--k:1"><span class="ln"><span>${L(c.place)}</span></span></h2>
+      <p style="--k:2">${L(c.line)}</p>
+      <a class="link-arrow" style="--k:3" href="guide.html?id=${c.guide}">${T('জায়গাটা দেখুন', 'See this place')} <span class="arr">→</span></a>
     </article>`).join('');
-  archIn.innerHTML = J.map((c, i) => `<img src="${img(c.img, i === 0 ? 1920 : 800)}" data-full="${img(c.img, 1920)}" alt="${c.place}, ${c.region}" ${i ? 'loading="lazy"' : ''} decoding="async">`).join('');
-  const labels = J.map((c) => c.time).concat('রাত');
+  archIn.innerHTML = J.map((c, i) => `<img src="${img(c.img, i === 0 ? c.mx : 800)}" data-full="${img(c.img, c.mx)}" alt="${L(c.place)}, ${L(c.region)}" ${i ? 'loading="lazy"' : ''} decoding="async">`).join('');
+  const labels = J.map((c) => L(c.time)).concat(T('রাত', 'Night'));
   const markX = (i) => lerp(9, 91, i / (S - 1));
   marks.innerHTML = labels.map((l, i) => `<button type="button" style="left:${markX(i)}%" data-i="${i}">${l}</button>`).join('');
   flies.innerHTML = Array.from({ length: 14 }, (_, i) => `<i style="left:${(i * 37 + 11) % 96}%;top:${(i * 53 + 7) % 90}%;--t:${5 + (i % 5)}s;--b:${1.6 + (i % 4) * 0.5}s;--dl:-${i * 0.7}s;--dx:${((i % 3) - 1) * 46}px;--dy:${-20 - (i % 4) * 16}px"></i>`).join('');
@@ -38,8 +38,8 @@
   const PAL = [
     ['#f6b98a', '#fbe6cc', '#e3a988', '#7a4a3a', '#d99a78', '#b9735a', '#2d1a12', '#ff6a3d'],
     ['#bfe0cf', '#f1f5e3', '#9cc7ad', '#1f5a3f', '#5aa088', '#2f7a63', '#0c2a1d', '#ffd98a'],
-    ['#8ecde6', '#e9f6f3', '#a9d6e0', '#1c6a6a', '#3aa0b8', '#1b7f9a', '#08283a', '#fff6cf'],
-    ['#ecc56f', '#f8edcf', '#d6b46a', '#4a5a22', '#a89a4e', '#7b7a34', '#2a2209', '#ffb23f'],
+    ['#9fd8d0', '#eaf7f2', '#86c3b0', '#1d6b5a', '#2fb3a0', '#14897a', '#06302a', '#fff6cf'],
+    ['#f0c987', '#fbefd6', '#9fb58a', '#3f5d3a', '#4f9bb0', '#2c7690', '#1f2a14', '#ffb23f'],
     ['#3d1c47', '#d9684f', '#8a3f5a', '#2a1230', '#8a3a52', '#5a2244', '#fff0e4', '#e2323f'],
     ['#04121f', '#0b3a3a', '#0c2a33', '#03131a', '#0a2c38', '#061c26', '#f6f1e7', '#e2323f'],
   ].map((row) => row.map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]));
@@ -106,12 +106,12 @@
 
   /* ============ TRIPS: vertical scroll drives a horizontal gallery ============ */
   const trips = $('#trips'), track = $('#tr-track'), bar = $('#tr-bar');
-  track.innerHTML = EB.TRIPS.map((t, i) => `
-    <a class="tr-card" href="${EB.local(t.href)}" data-cursor="খুলুন">
+  track.innerHTML = window.EB_TRIPS.map((t, i) => `
+    <a class="tr-card" href="trip.html?id=${t.id}" data-cursor="${T('খুলুন', 'Open')}">
       <div class="tr-ph">
         <img src="${img(t.img)}" alt="" loading="lazy" decoding="async">
-        <span class="tr-no" lang="en">${String(i + 1).padStart(2, '0')}</span>
-        <span class="tr-days">${bn(t.days)} দিন</span>
+        <span class="tr-no">${bn(EB.two(i + 1))}</span>
+        <span class="tr-days">${T(`${bn(t.days)} দিন`, `${t.days} days`)}</span>
         <div class="tr-ti"><h3>${t.t}</h3><p>${t.s}</p></div>
       </div>
       <div class="tr-meta"><span>${t.mode} · ${t.season}</span><b>~${EB.taka(t.cost)}</b></div>
@@ -137,10 +137,8 @@
 
   /* ============ SEASONS ============ */
   const ssList = $('#ss-list'), ssCards = $('#ss-cards'), ssMood = $('#ss-mood'), ssGhost = $('#ss-ghost'), ssSec = $('#seasons');
-  /* Bengali seasons run mid-month to mid-month: Boishakh starts mid-April */
-  const now = new Date(), doy = (now.getMonth() + 1) * 100 + now.getDate();
-  const curSeason = doy >= 1216 || doy < 215 ? 4 : doy < 415 ? 5 : doy < 615 ? 0 : doy < 816 ? 1 : doy < 1016 ? 2 : 3;
-  ssList.innerHTML = EB.SEASONS.map((s, i) => `<button type="button" role="tab" data-i="${i}" aria-selected="false"><i></i><b>${s.bn}</b><small lang="en">${s.en}</small>${i === curSeason ? '<em>এখন</em>' : ''}<span>${s.months}</span></button>`).join('');
+  const curSeason = EB.CUR_SEASON;
+  ssList.innerHTML = EB.SEASONS.map((s, i) => `<button type="button" role="tab" data-i="${i}" aria-selected="false"><i></i><b>${L(s.name)}</b>${i === curSeason ? `<em>${T('এখন', 'Now')}</em>` : ''}<span>${L(s.greg)}</span></button>`).join('');
   let ssCur = -1, ssTimer;
   function setSeason(i, instant) {
     if (i === ssCur) return;
@@ -149,12 +147,12 @@
     ssList.querySelectorAll('button').forEach((b, k) => b.setAttribute('aria-selected', String(k === i)));
     ssSec.style.setProperty('--tint', s.tint);
     const paint = () => {
-      ssMood.textContent = s.mood;
-      ssGhost.textContent = s.bn;
-      ssCards.innerHTML = s.places.map((p, k) => `
-        <a class="ss-card" style="--i:${k}" href="${EB.local(p.href)}" data-cursor="দেখুন">
+      ssMood.textContent = L(s.mood);
+      ssGhost.textContent = L(s.name);
+      ssCards.innerHTML = EB.seasonList(s.key).filter((g) => g.type !== 'food').slice(0, 4).map((p, k) => `
+        <a class="ss-card" style="--i:${k}" href="guide.html?id=${p.id}" data-cursor="${T('দেখুন', 'View')}">
           <div class="ss-ph"><img src="${img(p.img)}" alt="" loading="lazy" decoding="async"></div>
-          <small>${p.where}</small><h3>${p.t}</h3><p>${p.d}</p>
+          <small>${EB.dname(p.d)}</small><h3>${p.t}</h3><p>${p.s}</p>
         </a>`).join('');
       requestAnimationFrame(() => requestAnimationFrame(() => ssCards.classList.remove('swap')));
     };
@@ -167,13 +165,14 @@
 
   /* ============ FOOD MARQUEE (speeds up with the scroll) ============ */
   const fdRow = $('#fd-row'), fdWrap = $('#fd-marquee');
-  const foodHtml = EB.FOODS.map((f) => `
-    <a class="fd-item" href="${EB.local(f.href)}" data-cursor="স্বাদ নিন">
+  const FOODS = EB.FOOD_IDS.map(EB.guide).filter(Boolean);
+  const foodHtml = FOODS.map((f) => `
+    <a class="fd-item" href="guide.html?id=${f.id}" data-cursor="${T('স্বাদ নিন', 'Taste')}">
       <div class="fd-ph"><img src="${img(f.img)}" alt="" loading="lazy" decoding="async"></div>
-      <h3>${f.t}</h3><small>${f.where}</small>
+      <h3>${f.t}</h3><small>${EB.dname(f.d)}</small>
     </a>`).join('');
   fdRow.innerHTML = foodHtml + foodHtml;
-  [...fdRow.children].slice(EB.FOODS.length).forEach((el) => { el.setAttribute('aria-hidden', 'true'); el.tabIndex = -1; });
+  [...fdRow.children].slice(FOODS.length).forEach((el) => { el.setAttribute('aria-hidden', 'true'); el.tabIndex = -1; });
   let fx = 0, fHalf = 0, fHover = false, fPrevY = 0, fVis = false;
   fdWrap.addEventListener('pointerenter', () => { fHover = true; });
   fdWrap.addEventListener('pointerleave', () => { fHover = false; });
@@ -193,8 +192,8 @@
   const hot = ['coxs-bazar', 'sylhet', 'bandarban', 'rangamati', 'khulna', 'moulvibazar', 'patuakhali', 'sunamganj', 'dhaka'];
   const order = D.map((d, i) => i).sort((a, b) => D[a].c[1] - D[b].c[1]);
   const rank = []; order.forEach((idx, r) => { rank[idx] = r; });
-  mp.insertAdjacentHTML('afterbegin', `<svg viewBox="0 0 600 760" role="img" aria-label="বাংলাদেশের ৬৪ জেলার ম্যাপ">
-    ${D.map((d, i) => `<a href="district.html?id=${d.id}" aria-label="${d.bn}" data-bn="${d.bn}"><path style="--i:${rank[i]}" d="${d.d}"/></a>`).join('')}
+  mp.insertAdjacentHTML('afterbegin', `<svg viewBox="0 0 600 760" role="img" aria-label="${T('বাংলাদেশের ৬৪ জেলার ম্যাপ', 'Map of the 64 districts of Bangladesh')}">
+    ${D.map((d, i) => `<a href="district.html?id=${d.id}" aria-label="${EB.dname(d.id)}" data-bn="${EB.dname(d.id)}"><path style="--i:${rank[i]}" d="${d.d}"/></a>`).join('')}
     ${hot.map((id, k) => `<circle class="ring" cx="${byId[id].c[0]}" cy="${byId[id].c[1]}" r="5" style="animation-delay:${k * 0.3}s"/><circle class="dot" cx="${byId[id].c[0]}" cy="${byId[id].c[1]}" r="2.6"/>`).join('')}
   </svg>`);
   new IntersectionObserver((e, o) => { if (e[0].isIntersecting) { mp.classList.add('in'); o.disconnect(); } }, { threshold: 0.25 }).observe(mp);

@@ -1,24 +1,28 @@
-/* Inner pages: trips · trip · explore · district · guide · discover.
-   One template per page type; content comes from assets/data (extracted from the live site). */
+/* Inner pages: trips · trip · explore · district · guide · discover · hotels · hotel · my map · seasons.
+   One template per page type; content comes from assets/data (extracted from the live site), in the page language.
+   Every UI string is a T('বাংলা', 'English') pair. */
 (function () {
   const EB = window.EB;
-  const { bn, taka, clamp } = EB;
+  const { bn, taka, clamp, two } = EB;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const q = new URLSearchParams(location.search);
   const page = document.body.dataset.page, main = $('#main');
+  const SITE_NAME = T('এক্সপ্লোর বাংলাদেশ', 'Explore Bangladesh');
 
   const D = window.EB_DISTRICTS, dById = Object.fromEntries(D.map((d) => [d.id, d]));
   const INFO = window.EB_DINFO, DIVS = window.EB_DIVS, TRIPS = window.EB_TRIPS;
-  const G = window.EB_GUIDES.map((g) => ({ id: g[0], t: g[1], en: g[2], img: g[3], d: g[4], type: g[5], s: g[6], mx: g[7] }));
-  const gById = Object.fromEntries(G.map((g) => [g.id, g]));
+  const gById = EB.guides(), G = Object.values(gById);
   const divById = Object.fromEntries(DIVS.map((d) => [d.id, d]));
+  const dn = EB.dname;
+  const divName = (dv) => dv.bn;                                   // “Sylhet Division” / “সিলেট বিভাগ”
+  const divShort = (dv) => (EB.EN ? dv.en : dv.bn.replace(' বিভাগ', ''));
   const TYPE = {
-    place: { bn: 'ঘোরার জায়গা', en: 'places to see', list: 'places', h: ['দেখার মতো', 'জায়গা'], cur: 'দেখুন' },
-    food: { bn: 'খাবার', en: 'taste of the road', list: 'foods', h: ['প্রতিটা জেলার', 'নিজের স্বাদ'], cur: 'স্বাদ নিন' },
-    hidden: { bn: 'অচেনা জায়গা', en: 'off the map', list: 'hidden', h: ['ভিড়ের বাইরে', 'অচেনা জায়গা'], cur: 'খুঁজুন' },
-    tradition: { bn: 'ঐতিহ্য', en: 'living traditions', list: 'traditions', h: ['এখনও বেঁচে থাকা', 'ঐতিহ্য'], cur: 'জানুন' },
+    place: { name: T('ঘোরার জায়গা', 'Places'), accent: T('দেখার মতো', 'places to see'), list: 'places', h: [T('দেখার মতো', 'Places'), T('জায়গা', 'worth the trip')], cur: T('দেখুন', 'View') },
+    food: { name: T('খাবার', 'Food'), accent: T('পথের স্বাদ', 'taste of the road'), list: 'foods', h: [T('প্রতিটা জেলার', 'Every district'), T('নিজের স্বাদ', 'has its own taste')], cur: T('স্বাদ নিন', 'Taste') },
+    hidden: { name: T('অচেনা জায়গা', 'Hidden places'), accent: T('ভিড়ের বাইরে', 'off the map'), list: 'hidden', h: [T('ভিড়ের বাইরে', 'Away from'), T('অচেনা জায়গা', 'the crowds')], cur: T('খুঁজুন', 'Explore') },
+    tradition: { name: T('ঐতিহ্য', 'Traditions'), accent: T('জীবন্ত সংস্কৃতি', 'living traditions'), list: 'traditions', h: [T('এখনও বেঁচে থাকা', 'Living'), T('ঐতিহ্য', 'traditions')], cur: T('জানুন', 'Learn') },
   };
   const U = {
     trip: (id) => `trip.html?id=${id}`, guide: (id) => `guide.html?id=${id}`, district: (id) => `district.html?id=${id}`,
@@ -26,16 +30,17 @@
     plan: (ds, days, mode) => `plan.html?from=dhaka&to=${ds.join(',')}&days=${days || 3}&people=2&mode=${mode || 'bus'}`,
   };
   const pic = (id, mx, want) => EB.img(id, [400, 800, 1280, 1920].filter((w) => w <= Math.min(mx || 800, want || 800)).pop() || 800);
-  const two = (n) => String(n).padStart(2, '0');
+  const days = (n) => T(`${bn(n)} দিন`, `${n} day${n > 1 ? 's' : ''}`);
+  const fromPrice = (s) => String(s || '').replace(/^রুম ভাড়া\s*/, '').replace(/\s*থেকে$/, '').replace(/^Rooms from\s*/i, '');
 
   /* ---------- building blocks ---------- */
   const hero = ({ img, mx, crumbs, chip, small, title, sub, extra, short }) => `
     <section class="ph${short ? ' short' : ''}">
       <div class="ph-media"><img src="${pic(img, mx, 1920)}" alt="" fetchpriority="high"></div>
       <div class="wrap">
-        ${crumbs ? `<nav class="crumbs" style="--k:0" aria-label="আপনি এখানে">${crumbs.map(([t, h]) => (h ? `<a href="${h}">${t}</a>` : `<b>${t}</b>`)).join('<span>/</span>')}</nav>` : ''}
-        ${chip ? `<span class="chip t-${chip}" style="--k:1">${TYPE[chip].bn}</span>` : ''}
-        <h1 class="display${String(title).replace(/<[^>]+>/g, '').length > 16 ? ' long' : ''}" style="--k:2">${small ? `<small lang="en">${esc(small)}</small>` : ''}${title}</h1>
+        ${crumbs ? `<nav class="crumbs" style="--k:0" aria-label="${T('আপনি এখানে', 'You are here')}">${crumbs.map(([t, h]) => (h ? `<a href="${h}">${t}</a>` : `<b>${t}</b>`)).join('<span>/</span>')}</nav>` : ''}
+        ${chip ? `<span class="chip t-${chip}" style="--k:1">${TYPE[chip].name}</span>` : ''}
+        <h1 class="display${String(title).replace(/<[^>]+>/g, '').length > (EB.EN ? 22 : 16) ? ' long' : ''}" style="--k:2">${small ? `<small>${esc(small)}</small>` : ''}${title}</h1>
         ${sub ? `<p class="ph-sub" style="--k:3">${esc(sub)}</p>` : ''}
         ${extra || ''}
       </div>
@@ -43,29 +48,31 @@
   const tile = (g, i, o) => `
     <a class="tile t-${g.type}${o && o.cls ? ' ' + o.cls : ''}" href="${U.guide(g.id)}" data-cursor="${TYPE[g.type].cur}" style="--i:${i % 8}">
       <img src="${pic(g.img, g.mx, o && o.big ? 1280 : 800)}" alt="" loading="lazy" decoding="async">
-      ${o && o.no ? `<span class="tile-no" lang="en">${two(i + 1)}</span>` : ''}
-      <span class="tile-tx"><small>${o && o.where === false ? TYPE[g.type].bn : dById[g.d].bn}</small><b>${esc(g.t)}</b><p>${esc(g.s)}</p></span>
+      ${o && o.no ? `<span class="tile-no">${bn(two(i + 1))}</span>` : ''}
+      <span class="tile-tx"><small>${o && o.where === false ? TYPE[g.type].name : dn(g.d)}</small><b>${esc(g.t)}</b><p>${esc(g.s)}</p></span>
     </a>`;
   const tripTile = (t) => `
-    <a class="tile" href="${U.trip(t.id)}" data-cursor="খুলুন">
+    <a class="tile" href="${U.trip(t.id)}" data-cursor="${T('খুলুন', 'Open')}">
       <img src="${pic(t.img, t.mx, 800)}" alt="" loading="lazy" decoding="async">
-      <span class="tile-tx"><small>${bn(t.days)} দিন · ${t.mode} · ~${taka(Math.round(t.cost / 100) * 100)}</small><b>${esc(t.t)}</b><p>${esc(t.s)}</p></span>
+      <span class="tile-tx"><small>${days(t.days)} · ${t.mode} · ~${taka(Math.round(t.cost / 100) * 100)}</small><b>${esc(t.t)}</b><p>${esc(t.s)}</p></span>
     </a>`;
   const circle = (g) => `
-    <a class="circle" href="${U.guide(g.id)}" data-cursor="স্বাদ নিন">
+    <a class="circle" href="${U.guide(g.id)}" data-cursor="${TYPE.food.cur}">
       <div class="circle-ph"><img src="${pic(g.img, g.mx, 400)}" alt="" loading="lazy" decoding="async"></div>
-      <b>${esc(g.t)}</b><small>${dById[g.d].bn}</small>
+      <b>${esc(g.t)}</b><small>${dn(g.d)}</small>
     </a>`;
-  const head = (eyebrow, en, h, right) => `
+  const head = (eyebrow, accent, h, right) => `
     <div class="wrap sec-head" data-lines>
-      <div><span class="eyebrow" data-reveal>${eyebrow} <i lang="en">${en}</i></span>
+      <div><span class="eyebrow" data-reveal>${eyebrow} <i>${accent}</i></span>
       <h2 class="display"><span class="ln" style="--i:0"><span>${h[0]}</span></span>${h[1] ? `<span class="ln" style="--i:1"><span><em>${h[1]}</em></span></span>` : ''}</h2></div>
       ${right || ''}
     </div>`;
+  const count = (n) => `<span class="count" data-reveal>${bn(two(n))}</span>`;
+  const dragHint = () => `<p class="rail-hint">${T('টেনে আরও দেখুন', 'drag for more')}</p>`;
   /* people scan: show the first two sentences, keep the rest one tap away */
   const lede = (text) => {
-    const parts = String(text).split(/(?<=[।?!])\s+/), headTx = parts.slice(0, 2).join(' '), rest = parts.slice(2).join(' ');
-    return `<p class="lede-big" data-reveal>${esc(headTx)}${rest ? ` <span class="lede-rest" hidden>${esc(rest)}</span>` : ''}</p>${rest ? '<button class="link-arrow lede-more" type="button" data-reveal>পুরোটা পড়ুন <span class="arr">↓</span></button>' : ''}`;
+    const parts = String(text).split(/(?<=[।?!.])\s+/), headTx = parts.slice(0, 2).join(' '), rest = parts.slice(2).join(' ');
+    return `<p class="lede-big" data-reveal>${esc(headTx)}${rest ? ` <span class="lede-rest" hidden>${esc(rest)}</span>` : ''}</p>${rest ? `<button class="link-arrow lede-more" type="button" data-reveal>${T('পুরোটা পড়ুন', 'Read more')} <span class="arr">↓</span></button>` : ''}`;
   };
   document.addEventListener('click', (e) => {
     const b = e.target.closest('.lede-more'); if (!b) return;
@@ -73,53 +80,52 @@
     if (EB.lenis) EB.lenis.resize();
   });
   const toNum = (str) => { const m = String(str).replace(/[০-৯]/g, (c) => '০১২৩৪৫৬৭৮৯'.indexOf(c)).match(/[\d,]+/); return m ? +m[0].replace(/,/g, '') : Infinity; };
-  const TIER_BN = { budget: 'সাধারণ হোটেল', mid: 'ভালো হোটেল', upscale: 'অভিজাত রিসোর্ট' };
+  const latinDigits = (s) => String(s).replace(/[০-৯]/g, (c) => '০১২৩৪৫৬৭৮৯'.indexOf(c));
+  const TIER = { budget: T('সাধারণ হোটেল', 'Budget'), mid: T('ভালো হোটেল', 'Mid-range'), upscale: T('অভিজাত রিসোর্ট', 'Upscale') };
   const hotelCard = (id, h) => `
-    <a class="hcard" href="hotel.html?id=${id}" data-cursor="রুম দেখুন">
-      <div class="hcard-ph"><img src="${pic(INFO[h.d].img, INFO[h.d].mx, 800)}" alt="" loading="lazy" decoding="async"><span>${TIER_BN[h.tier] || ''}</span></div>
-      <small>${dById[h.d].bn} · ${esc(h.where.split(',')[0])}</small><h3>${esc(h.t)}</h3><b>${esc(h.from.replace('রুম ভাড়া ', ''))}</b>
+    <a class="hcard" href="hotel.html?id=${id}" data-cursor="${T('রুম দেখুন', 'Rooms')}">
+      <div class="hcard-ph"><img src="${pic(INFO[h.d].img, INFO[h.d].mx, 800)}" alt="" loading="lazy" decoding="async"><span>${TIER[h.tier] || ''}</span></div>
+      <small>${dn(h.d)} · ${esc(h.where.split(',')[0])}</small><h3>${esc(h.t)}</h3><b>${T(`${esc(fromPrice(h.from))} থেকে`, `from ${esc(fromPrice(h.from))}`)}</b>
     </a>`;
   const glance = (rows, cls) => `<dl class="${cls || 'glance'}" data-reveal>${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>`;
 
-  /* country map: highlight districts, optionally draw a route through them */
-  function miniMap({ on, route, links, light, pulse }) {
+  /* country map: highlight districts; optionally draw a road route through stops (needs route.js) */
+  function miniMap({ on, stops, links, light, pulse }) {
     const set = new Set(on || []);
     let extra = '';
-    if (route && route.length > 1) {
-      const pts = route.map((id) => dById[id].c);
-      let p = `M${pts[0][0]} ${pts[0][1]}`;
-      for (let i = 1; i < pts.length; i++) {
-        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], bend = (i % 2 ? 1 : -1) * 0.16;
-        p += ` Q${((x0 + x1) / 2 - (y1 - y0) * bend).toFixed(1)} ${((y0 + y1) / 2 + (x1 - x0) * bend).toFixed(1)} ${x1} ${y1}`;
-      }
-      extra += `<path class="route" pathLength="1" d="${p}"/><circle class="runner" r="6"><animateMotion dur="${Math.max(6, pts.length * 2)}s" repeatCount="indefinite" path="${p}"/></circle>`;
-      extra += [...new Set(route)].map((id) => `<circle class="pin" cx="${dById[id].c[0]}" cy="${dById[id].c[1]}" r="7"/>`).join('');
+    const pass = new Set();
+    if (stops && stops.length > 1 && EB.route) {
+      const legs = stops.slice(1).map((s, i) => EB.route.leg(stops[i], s));
+      const pts = legs.flatMap((l, i) => (i ? l.pts.slice(1) : l.pts)), p = EB.route.d(pts);
+      legs.forEach((l) => l.ds.forEach((d) => { if (!set.has(d)) pass.add(d); }));
+      extra += `<path class="route-shadow" d="${p}"/><path class="route" pathLength="1" d="${p}"/><circle class="runner" r="6"><animateMotion dur="${Math.max(7, pts.length * 0.8)}s" repeatCount="indefinite" path="${p}"/></circle>`;
+      extra += stops.map((s) => { const c = typeof s === 'string' ? EB.route.hq(s) : (s.ll ? EB.route.xy(s.ll[0], s.ll[1]) : EB.route.hq(s.d)); return `<circle class="pin" cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="7"/>`; }).join('');
     }
     if (pulse) extra += `<circle class="pulse" cx="${dById[pulse].c[0]}" cy="${dById[pulse].c[1]}" r="8"/>`;
-    return `<div class="mini-map${light ? ' light' : ''}" data-map><svg viewBox="0 0 600 760" role="img" aria-label="বাংলাদেশের ম্যাপ">
-      ${D.map((d) => { const p = `<path data-d="${d.id}" class="${set.has(d.id) ? 'on' : ''}" d="${d.d}"/>`; return links ? `<a href="${U.district(d.id)}" aria-label="${d.bn}">${p}</a>` : p; }).join('')}
+    return `<div class="mini-map${light ? ' light' : ''}" data-map><svg viewBox="0 0 600 760" role="img" aria-label="${T('বাংলাদেশের ম্যাপ', 'Map of Bangladesh')}">
+      ${D.map((d) => { const p = `<path data-d="${d.id}" class="${set.has(d.id) ? 'on' : pass.has(d.id) ? 'pass' : ''}" d="${d.d}"/>`; return links ? `<a href="${U.district(d.id)}" aria-label="${dn(d.id)}">${p}</a>` : p; }).join('')}
       ${extra}</svg></div>`;
   }
-  const missing = (what) => { main.innerHTML = `<section class="ph short"><div class="wrap"><h1 class="display" style="--k:1">${what} খুঁজে পাইনি</h1><div class="ph-row" style="--k:2"><a class="btn btn-gold" href="explore.html">৬৪ জেলা ঘুরে দেখুন</a></div></div></section>`; };
+  const missing = (what) => { main.innerHTML = `<section class="ph short"><div class="wrap"><h1 class="display" style="--k:1">${what}</h1><div class="ph-row" style="--k:2"><a class="btn btn-gold" href="explore.html">${T('৬৪ জেলা ঘুরে দেখুন', 'Explore the 64 districts')}</a></div></div></section>`; };
 
   /* =================== pages =================== */
   const pages = {
     /* ---- all ready-made trips: scroll picks the trip, the whole screen becomes its photo ---- */
     trips() {
-      document.title = 'রেডিমেড ট্রিপ — এক্সপ্লোর বাংলাদেশ';
+      document.title = `${T('রেডিমেড ট্রিপ', 'Ready-made trips')} — ${SITE_NAME}`;
       main.innerHTML = `
         <section class="tl" id="tl">
           <div class="tl-bg" aria-hidden="true">${TRIPS.map((t, i) => `<img src="${pic(t.img, t.mx, 1920)}" alt="" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div>
           <header class="wrap tl-head" data-lines>
-            <span class="eyebrow" data-reveal>রেডিমেড ট্রিপ <i lang="en">${TRIPS.length} curated routes</i></span>
-            <h1 class="display"><span class="ln" style="--i:0;--d:600ms"><span>ট্রিপ সাজানোই আছে।</span></span><span class="ln" style="--i:1;--d:600ms"><span><em>শুধু বেরিয়ে পড়ুন।</em></span></span></h1>
-            <p data-reveal style="--d:900ms" lang="en">scroll to travel</p>
+            <span class="eyebrow" data-reveal>${T('রেডিমেড ট্রিপ', 'Ready-made trips')} <i>${T(`${bn(TRIPS.length)}টি সাজানো রুট`, `${TRIPS.length} curated routes`)}</i></span>
+            <h1 class="display"><span class="ln" style="--i:0;--d:600ms"><span>${T('ট্রিপ সাজানোই আছে।', 'The trip is planned.')}</span></span><span class="ln" style="--i:1;--d:600ms"><span><em>${T('শুধু বেরিয়ে পড়ুন।', 'Just go.')}</em></span></span></h1>
+            <p data-reveal style="--d:900ms">${T('স্ক্রল করে ঘুরে দেখুন', 'scroll to travel')}</p>
           </header>
           <ol class="wrap tl-list">${TRIPS.map((t, i) => `
-            <li><a class="tl-row" href="${U.trip(t.id)}" data-i="${i}" data-cursor="খুলুন">
-              <span class="no" lang="en">${two(i + 1)}</span>
+            <li><a class="tl-row" href="${U.trip(t.id)}" data-i="${i}" data-cursor="${T('খুলুন', 'Open')}">
+              <span class="no">${bn(two(i + 1))}</span>
               <span class="name"><b>${esc(t.t)}</b><span>${esc(t.s)}</span></span>
-              <span class="meta"><b>~${taka(Math.round(t.cost / 100) * 100)}</b><span>${bn(t.days)} দিন · ${t.mode} · ${t.season}</span></span>
+              <span class="meta"><b>~${taka(Math.round(t.cost / 100) * 100)}</b><span>${days(t.days)} · ${t.mode} · ${t.season}</span></span>
             </a></li>`).join('')}</ol>
         </section>`;
       const rows = $$('.tl-row'), bgs = $$('.tl-bg img');
@@ -138,48 +144,49 @@
     /* ---- one trip told stop by stop; a sun travels down the route line ---- */
     trip() {
       const t = TRIPS.find((x) => x.id === q.get('id')) || null;
-      if (!t) return missing('ট্রিপটা');
+      if (!t) return missing(T('ট্রিপটা খুঁজে পাইনি', 'We couldn’t find that trip'));
       const stops = t.stops.map((id) => gById[id]).filter(Boolean);
       const ds = [...new Set(stops.map((s) => s.d))];
-      const mode = { 'বাসে': 'bus', 'গাড়িতে': 'car', 'বাইকে': 'bike' }[t.mode] || 'bus';
-      const planHref = U.plan(ds, t.days, mode);
-      document.title = `${t.t}: ${t.s} — এক্সপ্লোর বাংলাদেশ`;
+      const mode = /গাড়ি|car/i.test(t.mode) ? 'car' : /বাইক|bike/i.test(t.mode) ? 'bike' : 'bus';
+      const planHref = U.plan(stops.map((s) => s.id), t.days, mode);
+      document.title = `${t.t}: ${t.s} — ${SITE_NAME}`;
       const others = TRIPS.filter((x) => x.id !== t.id).sort((a, b) => Math.abs(a.days - t.days) - Math.abs(b.days - t.days)).slice(0, 3);
+      const routeStops = EB.route ? ['dhaka'].concat(stops.map((s) => EB.route.place(s.id)), ['dhaka']) : null;
       main.innerHTML = hero({
-        img: t.img, mx: t.mx, crumbs: [['রেডিমেড ট্রিপ', 'trips.html'], [t.t]], small: `${t.days} days · ${stops.length} stops`, title: esc(t.t), sub: t.s,
+        img: t.img, mx: t.mx, crumbs: [[T('রেডিমেড ট্রিপ', 'Ready-made trips'), 'trips.html'], [t.t]], small: T(`${bn(t.days)} দিন · ${bn(stops.length)}টা জায়গা`, `${t.days} days · ${stops.length} stops`), title: esc(t.t), sub: t.s,
         extra: `<ul class="facts" style="--k:4">
-            <li><b>${bn(t.days)} দিন</b><span>লাগবে</span></li><li><b>${bn(t.km)} কিমি</b><span>মোট পথ</span></li>
-            <li><b>${t.mode}</b><span>ঢাকা থেকে</span></li><li><b>${taka(t.cost)}</b><span>জনপ্রতি</span></li><li><b>${esc(t.season)}</b><span>সেরা সময়</span></li></ul>
-          <div class="ph-row" style="--k:5"><a class="btn btn-gold" href="${planHref}" data-magnetic><span>এই ট্রিপ নিজের মতো সাজান</span><span class="arr">→</span></a></div>`,
+            <li><b>${days(t.days)}</b><span>${T('লাগবে', 'needed')}</span></li><li><b>${T(`${bn(t.km)} কিমি`, `${t.km} km`)}</b><span>${T('মোট পথ', 'distance')}</span></li>
+            <li><b>${t.mode}</b><span>${T('ঢাকা থেকে', 'from Dhaka')}</span></li><li><b>${taka(t.cost)}</b><span>${T('জনপ্রতি', 'per person')}</span></li><li><b>${esc(t.season)}</b><span>${T('সেরা সময়', 'best time')}</span></li></ul>
+          <div class="ph-row" style="--k:5"><a class="btn btn-gold" href="${planHref}" data-magnetic><span>${T('এই ট্রিপ নিজের মতো সাজান', 'Make this trip your own')}</span><span class="arr">→</span></a></div>`,
       }) + `
-        <section class="sec"><div class="wrap"><p class="lede-big" data-reveal>${esc(t.lede)}</p></div></section>
+        <section class="sec"><div class="wrap">${lede(t.lede)}</div></section>
         <section class="stops" id="stops">
           <div class="stops-rail" aria-hidden="true"><i></i><span class="stops-sun"></span></div>
           ${stops.map((s, i) => `
             <article class="stop">
-              <a class="stop-ph" href="${U.guide(s.id)}" data-cursor="দেখুন"><img src="${pic(s.img, s.mx, 1280)}" alt="${esc(s.t)}" loading="lazy" decoding="async"></a>
+              <a class="stop-ph" href="${U.guide(s.id)}" data-cursor="${T('দেখুন', 'View')}"><img src="${pic(s.img, s.mx, 1280)}" alt="${esc(s.t)}" loading="lazy" decoding="async"></a>
               <div class="stop-tx">
                 <span class="stop-n" aria-hidden="true">${bn(two(i + 1))}</span>
-                <small>${dById[s.d].bn}</small>
+                <small>${dn(s.d)}</small>
                 <h3>${esc(s.t)}</h3>
                 <p>${esc(s.s)}</p>
-                <a class="link-arrow" href="${U.guide(s.id)}">জায়গাটা দেখুন <span class="arr">→</span></a>
+                <a class="link-arrow" href="${U.guide(s.id)}">${T('জায়গাটা দেখুন', 'See this place')} <span class="arr">→</span></a>
               </div>
             </article>`).join('')}
         </section>
         <section class="sec dark">
           <div class="wrap route-band">
             <div data-lines>
-              <span class="eyebrow" data-reveal>পুরো রুট <i lang="en">the route</i></span>
-              <h2 class="display"><span class="ln" style="--i:0"><span>${bn(stops.length)}টা জায়গা,</span></span><span class="ln" style="--i:1"><span><em>${bn(t.days)} দিনে</em></span></span></h2>
-              <p data-reveal>দিন, কতজন, বাহন বা থাকার মান বদলে নিন — রুট আর খরচ সঙ্গে সঙ্গে নতুন করে হিসাব হবে।</p>
-              <a class="btn btn-gold" href="${planHref}" data-magnetic data-reveal><span>প্ল্যানারে খুলুন</span><span class="arr">→</span></a>
+              <span class="eyebrow" data-reveal>${T('পুরো রুট', 'The whole route')} <i>${T('রাস্তা ধরে', 'by road')}</i></span>
+              <h2 class="display"><span class="ln" style="--i:0"><span>${T(`${bn(stops.length)}টা জায়গা,`, `${stops.length} places,`)}</span></span><span class="ln" style="--i:1"><span><em>${T(`${bn(t.days)} দিনে`, `${t.days} days`)}</em></span></span></h2>
+              <p data-reveal>${T('দিন, কতজন, বাহন বা থাকার মান বদলে নিন — রুট আর খরচ সঙ্গে সঙ্গে নতুন করে হিসাব হবে।', 'Change the days, the group, the transport or the hotels — the route and the cost update straight away.')}</p>
+              <a class="btn btn-gold" href="${planHref}" data-magnetic data-reveal><span>${T('প্ল্যানারে খুলুন', 'Open in the planner')}</span><span class="arr">→</span></a>
             </div>
-            ${miniMap({ on: ds, route: ['dhaka'].concat(ds, ['dhaka']) })}
+            ${miniMap({ on: ds, stops: routeStops })}
           </div>
         </section>
         <section class="sec">
-          ${head('আরও রেডিমেড ট্রিপ', 'keep going', ['এর পরে', 'কোথায়?'], '<a class="link-arrow" href="trips.html" data-reveal>সব ট্রিপ <span class="arr">→</span></a>')}
+          ${head(T('আরও রেডিমেড ট্রিপ', 'More ready-made trips'), T('চলতে থাকুন', 'keep going'), [T('এর পরে', 'Where to'), T('কোথায়?', 'next?')], `<a class="link-arrow" href="trips.html" data-reveal>${T('সব ট্রিপ', 'All trips')} <span class="arr">→</span></a>`)}
           <div class="wrap more-trips">${others.map(tripTile).join('')}</div>
         </section>`;
       storyRail();
@@ -187,39 +194,32 @@
 
     /* ---- 64 districts: the map stays put, the divisions scroll past it ---- */
     explore() {
-      document.title = '৬৪ জেলা, ৮ বিভাগ — এক্সপ্লোর বাংলাদেশ';
-      const count = (d) => G.filter((g) => g.d === d).length;
+      document.title = `${T('৬৪ জেলা, ৮ বিভাগ', '64 districts, 8 divisions')} — ${SITE_NAME}`;
+      const countG = (d) => G.filter((g) => g.d === d).length;
       main.innerHTML = hero({
-        img: window.EB_EXPLORE_IMG, mx: 1920, short: true, small: 'sixty-four districts', title: '৬৪ জেলা, <em>৮ বিভাগ।</em>',
-        sub: 'ম্যাপে ট্যাপ করুন, বা বিভাগ ধরে নামতে থাকুন।',
-        extra: `<div class="div-pills" style="--k:4">${DIVS.map((d) => `<a class="pill" href="#div-${d.id}">${d.bn.replace(' বিভাগ', '')}<i>${bn(d.d.length)}</i></a>`).join('')}</div>`,
+        img: window.EB_EXPLORE_IMG, mx: 1920, short: true, small: T('পুরো দেশ', 'the whole country'), title: T('৬৪ জেলা, <em>৮ বিভাগ।</em>', '64 districts, <em>8 divisions.</em>'),
+        sub: T('ম্যাপে ট্যাপ করুন, বা বিভাগ ধরে নামতে থাকুন।', 'Tap the map, or scroll down division by division.'),
+        extra: `<div class="div-pills" style="--k:4">${DIVS.map((d) => `<a class="pill" href="#div-${d.id}">${divShort(d)}<i>${bn(d.d.length)}</i></a>`).join('')}</div>`,
       }) + `
         <section class="sec">
           <div class="wrap ex">
-            <aside class="ex-map">
-              <div class="ex-now"><b id="ex-now">${DIVS[0].bn}</b><span id="ex-now-en" lang="en">${DIVS[0].en}</span></div>
-              ${miniMap({ on: DIVS[0].d, links: true, light: true })}
-            </aside>
+            <aside class="ex-map">${miniMap({ on: DIVS[0].d, links: true, light: true })}</aside>
             <div class="ex-list">
               ${DIVS.map((dv) => `
                 <section class="division" id="div-${dv.id}" data-div="${dv.id}">
-                  <header><h2 class="display">${dv.bn}</h2><span lang="en">${dv.en}</span><em>${bn(dv.d.length)}টি জেলা</em></header>
+                  <header><h2 class="display">${divName(dv)}</h2><em>${T(`${bn(dv.d.length)}টি জেলা`, `${dv.d.length} districts`)}</em></header>
                   <div class="d-grid">${dv.d.map((id) => `
-                    <a class="tile" href="${U.district(id)}" data-d="${id}" data-cursor="ঘুরে দেখুন" data-reveal>
+                    <a class="tile" href="${U.district(id)}" data-d="${id}" data-cursor="${T('ঘুরে দেখুন', 'Explore')}" data-reveal>
                       <img src="${pic(INFO[id].img, INFO[id].mx, 800)}" alt="" loading="lazy" decoding="async">
-                      <span class="tile-tx"><small>${bn(count(id))}টি লেখা</small><b>${dById[id].bn}</b><p>${esc(INFO[id].tag)}</p></span>
+                      <span class="tile-tx"><small>${T(`${bn(countG(id))}টি লেখা`, `${countG(id)} guides`)}</small><b>${dn(id)}</b><p>${esc(INFO[id].tag)}</p></span>
                     </a>`).join('')}</div>
                 </section>`).join('')}
             </div>
           </div>
         </section>`;
-      const paths = $$('.ex-map path'), now = $('#ex-now'), nowEn = $('#ex-now-en');
+      const paths = $$('.ex-map path');
       let cur = DIVS[0].id;
-      const setDiv = (id) => {
-        if (id === cur) return; cur = id; const dv = divById[id], s = new Set(dv.d);
-        paths.forEach((p) => p.classList.toggle('on', s.has(p.dataset.d)));
-        now.textContent = dv.bn; nowEn.textContent = dv.en;
-      };
+      const setDiv = (id) => { if (id === cur) return; cur = id; const s = new Set(divById[id].d); paths.forEach((p) => p.classList.toggle('on', s.has(p.dataset.d))); };
       const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) setDiv(e.target.dataset.div); }), { rootMargin: '-45% 0px -50% 0px' });
       $$('.division').forEach((s) => io.observe(s));
       if (EB.fine) {
@@ -234,23 +234,23 @@
     /* ---- one district ---- */
     district() {
       const id = q.get('id'), info = INFO[id];
-      if (!info) return missing('জেলাটা');
-      const d = dById[id], dv = divById[info.div];
+      if (!info) return missing(T('জেলাটা খুঁজে পাইনি', 'We couldn’t find that district'));
+      const dv = divById[info.div];
       const rank = Object.fromEntries((info.order || []).map((x, i) => [x, i]));
       const by = (type) => G.filter((g) => g.d === id && g.type === type).sort((a, b) => (rank[a.id] ?? 99) - (rank[b.id] ?? 99));
       const places = by('place'), foods = by('food'), hidden = by('hidden'), trad = by('tradition');
       const trips = info.trips.map((t) => TRIPS.find((x) => x.id === t)).filter(Boolean);
       const sibs = dv.d, nextId = sibs[(sibs.indexOf(id) + 1) % sibs.length], next = INFO[nextId];
-      document.title = `${d.bn} — এক্সপ্লোর বাংলাদেশ`;
+      document.title = `${dn(id)} — ${SITE_NAME}`;
       const railSec = (items, type, o) => items.length ? `
         <section class="sec${o.dark ? ' dark' : ''}${o.cream ? ' cream' : ''}">
-          ${head(TYPE[type].bn, TYPE[type].en, o.h, `<span class="count" data-reveal lang="en">${two(items.length)}</span>`)}
+          ${head(TYPE[type].name, TYPE[type].accent, o.h, count(items.length))}
           <div class="${type === 'food' ? 'circles' : 'rail'}" data-drag>${items.map((g, i) => (type === 'food' ? circle(g) : tile(g, i, { no: true, where: false }))).join('')}</div>
-          ${items.length > 3 ? '<p class="rail-hint" lang="en">drag</p>' : ''}
+          ${dragHint()}
         </section>` : '';
       main.innerHTML = hero({
-        img: info.img, mx: info.mx, crumbs: [['৬৪ জেলা', 'explore.html'], [dv.bn, `explore.html#div-${dv.id}`], [d.bn]], small: info.en, title: d.bn, sub: info.tag,
-        extra: `<div class="ph-row" style="--k:4"><a class="btn btn-gold" href="${U.plan([id], 3)}" data-magnetic><span>${d.bn} ঘোরার প্ল্যান করুন</span><span class="arr">→</span></a>${trips[0] ? `<a class="btn btn-ghost" href="${U.trip(trips[0].id)}">রেডিমেড ট্রিপ দেখুন</a>` : ''}</div>`,
+        img: info.img, mx: info.mx, crumbs: [[T('৬৪ জেলা', '64 districts'), 'explore.html'], [divName(dv), `explore.html#div-${dv.id}`], [dn(id)]], small: divName(dv), title: dn(id), sub: info.tag,
+        extra: `<div class="ph-row" style="--k:4"><a class="btn btn-gold" href="${U.plan([id], 3)}" data-magnetic><span>${T(`${dn(id)} ঘোরার প্ল্যান করুন`, `Plan a trip to ${dn(id)}`)}</span><span class="arr">→</span></a>${trips[0] ? `<a class="btn btn-ghost" href="${U.trip(trips[0].id)}">${T('রেডিমেড ট্রিপ দেখুন', 'See a ready-made trip')}</a>` : ''}</div>`,
       }) + `
         <section class="sec">
           <div class="wrap lede-grid">
@@ -259,98 +259,104 @@
             ${glance(info.glance.slice(0, 3), 'glance glance-side')}
           </div>
         </section>
-        ${railSec(places, 'place', { cream: true, h: ['যা দেখতে', 'যাবেন'] })}
-        ${railSec(foods, 'food', { h: ['যা না খেলে', 'চলবে না'] })}
-        ${railSec(hidden, 'hidden', { dark: true, h: ['ভিড়ের বাইরে', 'অচেনা জায়গা'] })}
-        ${railSec(trad, 'tradition', { cream: true, h: ['এখনও বেঁচে থাকা', 'ঐতিহ্য'] })}
+        ${railSec(places, 'place', { cream: true, h: [T('যা দেখতে', 'What to'), T('যাবেন', 'see')] })}
+        ${railSec(foods, 'food', { h: [T('যা না খেলে', 'What you'), T('চলবে না', 'must eat')] })}
+        ${railSec(hidden, 'hidden', { dark: true, h: TYPE.hidden.h })}
+        ${railSec(trad, 'tradition', { cream: true, h: TYPE.tradition.h })}
         ${info.stay.length ? `
         <section class="sec dark">
-          ${head('কোথায় থাকবেন', 'stay', ['এক রাতের', 'রুম ভাড়া'], `<a class="link-arrow" href="hotels.html?d=${id}" data-reveal>হোটেলের নাম ও দাম <span class="arr">→</span></a>`)}
+          ${head(T('কোথায় থাকবেন', 'Where to stay'), T('রাত কাটানো', 'stay'), [T('এক রাতের', 'Room rates'), T('রুম ভাড়া', 'per night')], `<a class="link-arrow" href="hotels.html?d=${id}" data-reveal>${T('হোটেলের নাম ও দাম', 'Hotels and prices')} <span class="arr">→</span></a>`)}
           <div class="wrap"><div class="stay">${info.stay.map(([k, v], i) => `<div data-reveal style="--d:${i * 90}ms"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>
           ${info.peak ? `<p class="stay-note" data-reveal>${esc(info.peak)}</p>` : ''}</div>
         </section>` : ''}
-        <a class="next" href="${U.district(nextId)}" data-cursor="চলুন">
+        <a class="next" href="${U.district(nextId)}" data-cursor="${T('চলুন', 'Go')}">
           <img src="${pic(next.img, next.mx, 1920)}" alt="" loading="lazy">
-          <small lang="en">next in ${dv.en}</small><b>${dById[nextId].bn}</b><span>${esc(next.tag)}</span>
+          <small>${T(`${divName(dv)}-এর পরের জেলা`, `next in ${divName(dv)}`)}</small><b>${dn(nextId)}</b><span>${esc(next.tag)}</span>
         </a>`;
     },
 
     /* ---- one place / food / tradition ---- */
     async guide() {
       const g = gById[q.get('id')];
-      if (!g) return missing('জায়গাটা');
-      const info = INFO[g.d], d = dById[g.d];
-      document.title = `${g.t} — ${d.bn} — এক্সপ্লোর বাংলাদেশ`;
+      if (!g) return missing(T('জায়গাটা খুঁজে পাইনি', 'We couldn’t find that place'));
+      const info = INFO[g.d];
+      document.title = `${g.t} — ${dn(g.d)} — ${SITE_NAME}`;
       main.innerHTML = hero({
-        img: g.img, mx: g.mx, crumbs: [['৬৪ জেলা', 'explore.html'], [d.bn, U.district(g.d)], [TYPE[g.type].bn, U.list(g.type)]], chip: g.type, small: g.en, title: esc(g.t), sub: g.s,
+        img: g.img, mx: g.mx, crumbs: [[T('৬৪ জেলা', '64 districts'), 'explore.html'], [dn(g.d), U.district(g.d)], [TYPE[g.type].name, U.list(g.type)]], chip: g.type, small: dn(g.d), title: esc(g.t), sub: g.s,
       }) + '<div id="g-body"></div>';
       let det = {};
-      try { det = (await (await fetch(`assets/data/guide/${g.d}.json`)).json())[g.id] || {}; } catch (e) { /* show what we have */ }
+      try { det = (await (await fetch(`${EB.base}assets/data/${EB.EN ? 'guide-en' : 'guide'}/${g.d}.json`)).json())[g.id] || {}; } catch (e) { /* show what we have */ }
       const blocks = det.blocks || [];
       const near = (det.near || []).map((id) => gById[id]).filter(Boolean);
       const more = near.length ? near : G.filter((x) => x.d === g.d && x.id !== g.id).slice(0, 4);
       const trips = (det.trips || []).map((t) => TRIPS.find((x) => x.id === t)).filter(Boolean);
+      const canPlan = g.type === 'place' || g.type === 'hidden';
       $('#g-body').innerHTML = `
         ${det.glance && det.glance.length ? `<section class="sec" style="padding-bottom:0"><div class="wrap">${glance(det.glance)}</div></section>` : ''}
         <section class="sec">
           <div class="wrap g-grid">
             <div>
               ${lede(det.desc || g.s)}
-              <div class="g-cards">${blocks.map(([h, p], i) => `<div class="g-card ${/জেনে|সতর্ক|মনে/.test(h) ? 'tip' : 'go'}" data-reveal style="--d:${i * 90}ms"><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join('')}</div>
+              <div class="g-cards">${blocks.map(([h, p], i) => `<div class="g-card ${/জেনে|সতর্ক|মনে|good to know|note|warning|tip/i.test(h) ? 'tip' : 'go'}" data-reveal style="--d:${i * 90}ms"><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`).join('')}</div>
               ${det.tags && det.tags.length ? `<div class="tags" data-reveal>${det.tags.map((t) => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
             </div>
             <aside class="g-side" data-reveal>
-              <div class="g-where">${miniMap({ on: [g.d], pulse: g.d })}<p>${d.bn} জেলা · ${divById[info.div].bn}</p></div>
+              <div class="g-where">${miniMap({ on: [g.d], pulse: g.d })}<p>${T(`${dn(g.d)} জেলা`, `${dn(g.d)} district`)} · ${divName(divById[info.div])}</p></div>
               <div class="g-actions">
-                <a class="btn btn-dark" href="${U.plan([g.d], 3)}"><span>${d.bn} ঘোরার প্ল্যান করুন</span><span class="arr">→</span></a>
-                ${det.ll && det.ll.length === 2 ? `<a class="btn btn-line" href="https://www.google.com/maps/search/?api=1&query=${det.ll[0]},${det.ll[1]}" target="_blank" rel="noopener">গুগল ম্যাপে খুলুন</a>` : ''}
-                <a class="btn btn-line" href="${U.district(g.d)}">${d.bn} জেলার গাইড</a>
+                <a class="btn btn-dark" href="${U.plan([canPlan ? g.id : g.d], 3)}"><span>${canPlan ? T('এখানে যাওয়ার প্ল্যান করুন', 'Plan a trip here') : T(`${dn(g.d)} ঘোরার প্ল্যান করুন`, `Plan a trip to ${dn(g.d)}`)}</span><span class="arr">→</span></a>
+                ${det.ll && det.ll.length === 2 ? `<a class="btn btn-line" href="https://www.google.com/maps/search/?api=1&query=${det.ll[0]},${det.ll[1]}" target="_blank" rel="noopener">${T('গুগল ম্যাপে খুলুন', 'Open in Google Maps')}</a>` : ''}
+                <a class="btn btn-line" href="${U.district(g.d)}">${T(`${dn(g.d)} জেলার গাইড`, `${dn(g.d)} district guide`)}</a>
               </div>
             </aside>
           </div>
         </section>
-        ${trips.length ? `<section class="sec dark">${head('রেডিমেড ট্রিপ', 'on this route', ['এই জায়গাসহ', 'সাজানো ট্রিপ'])}<div class="wrap more-trips">${trips.slice(0, 3).map(tripTile).join('')}</div></section>` : ''}
-        ${more.length ? `<section class="sec cream">${head(near.length ? 'কাছাকাছি' : d.bn, 'nearby', ['এর পাশেই', 'আরও যা আছে'], `<a class="link-arrow" href="${U.district(g.d)}" data-reveal>${d.bn} জেলা <span class="arr">→</span></a>`)}<div class="wrap cards4">${more.map((x, i) => tile(x, i)).join('')}</div></section>` : ''}`;
+        ${trips.length ? `<section class="sec dark">${head(T('রেডিমেড ট্রিপ', 'Ready-made trips'), T('এই পথে', 'on this route'), [T('এই জায়গাসহ', 'Trips that'), T('সাজানো ট্রিপ', 'include it')])}<div class="wrap more-trips">${trips.slice(0, 3).map(tripTile).join('')}</div></section>` : ''}
+        ${more.length ? `<section class="sec cream">${head(near.length ? T('কাছাকাছি', 'Nearby') : dn(g.d), T('আশেপাশে', 'close by'), [T('এর পাশেই', 'More to see'), T('আরও যা আছে', 'nearby')], `<a class="link-arrow" href="${U.district(g.d)}" data-reveal>${T(`${dn(g.d)} জেলা`, `${dn(g.d)} district`)} <span class="arr">→</span></a>`)}<div class="wrap cards4">${more.map((x, i) => tile(x, i)).join('')}</div></section>` : ''}`;
       after();
     },
 
     /* ---- galleries: places, foods, hidden, traditions ---- */
     discover() {
-      const type = Object.keys(TYPE).find((k) => TYPE[k].list === q.get('type')) || 'place', T = TYPE[type];
-      const all = G.filter((g) => g.type === type);
+      const type = Object.keys(TYPE).find((k) => TYPE[k].list === q.get('type')) || 'place', Ty = TYPE[type];
+      const all = G.filter((g) => g.type === type).sort((a, b) => a.t.localeCompare(b.t, T('bn', 'en')));
       const cover = all.find((g) => g.mx >= 1920 && /sajek|ratargul|sundarban|kacchi|biriyani|jamdani|nafakhum/.test(g.id)) || all.find((g) => g.mx >= 1920) || all[0];
-      document.title = `${T.bn} — এক্সপ্লোর বাংলাদেশ`;
+      document.title = `${Ty.name} — ${SITE_NAME}`;
       const divCount = (id) => all.filter((g) => INFO[g.d].div === id).length;
       main.innerHTML = hero({
-        img: cover.img, mx: cover.mx, short: true, small: T.en, title: `${T.h[0]} <em>${T.h[1]}</em>`,
-        extra: `<div class="dc-types" style="--k:4">${Object.keys(TYPE).map((k) => `<a href="${U.list(k)}"${k === type ? ' aria-current="page"' : ''}>${TYPE[k].bn}</a>`).join('')}</div>`,
+        img: cover.img, mx: cover.mx, short: true, small: Ty.accent, title: `${Ty.h[0]} <em>${Ty.h[1]}</em>`,
+        extra: `<div class="dc-types" style="--k:4">${Object.keys(TYPE).map((k) => `<a href="${U.list(k)}"${k === type ? ' aria-current="page"' : ''}>${TYPE[k].name}</a>`).join('')}</div>`,
       }) + `
         <div class="dc-bar"><div class="wrap">
-          <div class="dc-pills" role="group" aria-label="বিভাগ"><button class="pill" type="button" data-div="" aria-pressed="true">সব<i>${bn(all.length)}</i></button>${DIVS.map((d) => `<button class="pill" type="button" data-div="${d.id}" aria-pressed="false">${d.bn.replace(' বিভাগ', '')}<i>${bn(divCount(d.id))}</i></button>`).join('')}</div>
-          <input class="dc-search" id="dc-q" type="search" placeholder="নাম বা জেলা লিখুন" aria-label="খুঁজুন">
+          <label class="dd"><span class="sr">${T('বিভাগ', 'Division')}</span>
+            <select id="dc-div">
+              <option value="">${T(`সব বিভাগ · ${bn(all.length)}`, `All divisions · ${all.length}`)}</option>
+              ${DIVS.map((d) => `<option value="${d.id}">${divName(d)} · ${bn(divCount(d.id))}</option>`).join('')}
+            </select>
+          </label>
+          <input class="dc-search" id="dc-q" type="search" placeholder="${T('নাম বা জেলা লিখুন', 'Search by name or district')}" aria-label="${T('খুঁজুন', 'Search')}">
         </div></div>
-        <section class="sec" style="padding-top:36px"><div class="wrap"><p class="dc-count" id="dc-count" lang="en"></p><div class="dc-grid" id="dc-grid"></div><div id="dc-more" style="height:1px"></div></div></section>`;
-      const grid = $('#dc-grid'), sentinel = $('#dc-more'), countEl = $('#dc-count');
+        <section class="sec" style="padding-top:36px"><div class="wrap"><p class="dc-count" id="dc-count"></p><div class="dc-grid" id="dc-grid"></div><div id="dc-more" style="height:1px"></div></div></section>`;
+      const grid = $('#dc-grid'), sentinel = $('#dc-more'), countEl = $('#dc-count'), sel = $('#dc-div');
       let list = all, shown = 0, div = '', term = '';
       const tileIo = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); tileIo.unobserve(e.target); } }), { rootMargin: '0px 0px -6% 0px' });
       const more = () => {
         const next = list.slice(shown, shown + 20); if (!next.length) return;
-        const html = next.map((g, k) => tile(g, shown + k, { cls: (shown + k) % 9 === 0 && g.mx >= 1280 ? 'wide' : '', big: (shown + k) % 9 === 0 })).join('');
-        grid.insertAdjacentHTML('beforeend', html); shown += next.length;
+        grid.insertAdjacentHTML('beforeend', next.map((g, k) => tile(g, shown + k, { cls: (shown + k) % 9 === 0 && g.mx >= 1280 ? 'wide' : '', big: (shown + k) % 9 === 0 })).join(''));
+        shown += next.length;
         $$('.tile:not(.in)', grid).forEach((t) => tileIo.observe(t));
         if (EB.lenis) EB.lenis.resize();
       };
       const apply = () => {
         const t = term.trim().toLowerCase();
-        list = all.filter((g) => (!div || INFO[g.d].div === div) && (!t || (g.t + ' ' + g.en + ' ' + dById[g.d].bn + ' ' + g.d).toLowerCase().includes(t)));
-        grid.innerHTML = list.length ? '' : '<p class="dc-empty">এই নামে কিছু পাইনি।</p>'; shown = 0;
-        countEl.textContent = `${list.length} ${list.length === 1 ? 'entry' : 'entries'}`;
+        list = all.filter((g) => (!div || INFO[g.d].div === div) && (!t || (g.t + ' ' + g.id.replace(/-/g, ' ') + ' ' + dn(g.d) + ' ' + g.d).toLowerCase().includes(t)));
+        grid.innerHTML = list.length ? '' : `<p class="dc-empty">${T('এই নামে কিছু পাইনি।', 'Nothing found by that name.')}</p>`; shown = 0;
+        countEl.textContent = T(`${bn(list.length)}টি`, `${list.length} ${list.length === 1 ? 'entry' : 'entries'}`);
+        sel.closest('.dd').classList.toggle('on', !!div);
         more();
       };
       new IntersectionObserver((es) => { if (es[0].isIntersecting) more(); }, { rootMargin: '900px' }).observe(sentinel);
-      $('.dc-pills').addEventListener('click', (e) => {
-        const b = e.target.closest('button'); if (!b) return;
-        div = b.dataset.div; $$('.dc-pills button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); apply();
+      sel.addEventListener('change', () => {
+        div = sel.value; apply();
         const top = $('.dc-bar').getBoundingClientRect().top + scrollY; if (scrollY > top) EB.scrollTo(top, { duration: 0.8 });
       });
       $('#dc-q').addEventListener('input', (e) => { term = e.target.value; apply(); });
@@ -363,39 +369,40 @@
     /* ---- where to stay: pick a budget, the map and every district re-price themselves ---- */
     hotels() {
       const S = window.EB_STAY;
-      document.title = 'কোথায় থাকবেন — এক্সপ্লোর বাংলাদেশ';
-      const TIERS = [['budget', 'সাধারণ হোটেল', 'simple'], ['mid', 'ভালো হোটেল', 'comfortable'], ['upscale', 'অভিজাত রিসোর্ট', 'luxury']];
+      document.title = `${T('কোথায় থাকবেন', 'Where to stay')} — ${SITE_NAME}`;
+      const TIERS = [['budget', T('সাধারণ হোটেল', 'Budget')], ['mid', T('ভালো হোটেল', 'Mid-range')], ['upscale', T('অভিজাত রিসোর্ট', 'Upscale')]];
       const price = (id, k) => { const row = (INFO[id].stay || [])[TIERS.findIndex((t) => t[0] === k)]; return row ? row[1] : ''; };
       const low = (id, k) => { const p = price(id, k); return p ? toNum(p) : Infinity; };
       let tier = 'budget', sort = 'price', term = '';
       main.innerHTML = hero({
-        img: S.hero, mx: 1920, short: true, small: 'where to stay', title: 'কোথায় <em>থাকবেন</em>', sub: '৬৪ জেলায় এক রাতের রুম ভাড়া। বাজেট বেছে নিন, ম্যাপ নিজেই বদলে যাবে।',
+        img: S.hero, mx: 1920, short: true, small: T('৬৪ জেলার রুম ভাড়া', 'room rates in 64 districts'), title: T('কোথায় <em>থাকবেন</em>', 'Where to <em>stay</em>'), sub: T('বাজেট বেছে নিন, ম্যাপ নিজেই বদলে যাবে।', 'Pick a budget and the map re-colours itself.'),
       }) + `
         <div class="dc-bar"><div class="wrap">
-          <div class="seg" id="st-tier" role="radiogroup" aria-label="হোটেলের মান">${TIERS.map((t) => `<button type="button" role="radio" data-k="${t[0]}" aria-checked="${t[0] === tier}">${t[1]}</button>`).join('')}</div>
-          <div class="dc-pills" style="justify-content:flex-end"><button class="pill" type="button" data-sort="price" aria-pressed="true">কম ভাড়া আগে</button><button class="pill" type="button" data-sort="div" aria-pressed="false">বিভাগ ধরে</button></div>
-          <input class="dc-search" id="st-q" type="search" placeholder="জেলার নাম লিখুন" aria-label="জেলা খুঁজুন">
+          <div class="seg" id="st-tier" role="radiogroup" aria-label="${T('হোটেলের মান', 'Hotel class')}">${TIERS.map((t) => `<button type="button" role="radio" data-k="${t[0]}" aria-checked="${t[0] === tier}">${t[1]}</button>`).join('')}</div>
+          <div class="dc-pills" style="justify-content:flex-end"><button class="pill" type="button" data-sort="price" aria-pressed="true">${T('কম ভাড়া আগে', 'Cheapest first')}</button><button class="pill" type="button" data-sort="div" aria-pressed="false">${T('বিভাগ ধরে', 'By division')}</button></div>
+          <input class="dc-search" id="st-q" type="search" placeholder="${T('জেলার নাম লিখুন', 'Search a district')}" aria-label="${T('জেলা খুঁজুন', 'Search a district')}">
         </div></div>
         <section class="sec" style="padding-top:44px">
           <div class="wrap ex">
             <aside class="ex-map st-map">
-              <div class="st-read"><small id="st-r-s">সবচেয়ে কম ভাড়া</small><b id="st-r-n"></b><span id="st-r-p"></span></div>
-              ${miniMap({ light: true, links: false })}
+              <div class="st-read"><small id="st-r-s"></small><b id="st-r-n"></b><span id="st-r-p"></span></div>
+              ${miniMap({ light: true })}
               <div class="st-legend"><span id="st-min"></span><i></i><span id="st-max"></span></div>
             </aside>
-            <div><p class="dc-count" id="st-count" lang="en"></p><div class="d-grid st-grid" id="st-grid"></div></div>
+            <div><p class="dc-count" id="st-count"></p><div class="d-grid st-grid" id="st-grid"></div></div>
           </div>
         </section>
         <section class="sec dark">
-          ${head('নাম ধরে হোটেল', 'by name', ['রুম ধরে', 'ভাড়া দেখুন'], `<span class="count" data-reveal lang="en">${two(Object.keys(S.h).length)}</span>`)}
+          ${head(T('নাম ধরে হোটেল', 'Hotels by name'), T('রুম ধরে ভাড়া', 'room by room'), [T('রুম ধরে', 'Room-by-room'), T('ভাড়া দেখুন', 'prices')], count(Object.keys(S.h).length))}
           <div class="rail" data-drag id="st-rail"></div>
-          <p class="rail-hint" lang="en">drag</p>
+          ${dragHint()}
         </section>
         <div class="sheet-back" id="sheet-back"></div>
         <aside class="sheet" id="sheet" aria-hidden="true" data-lenis-prevent></aside>`;
       const grid = $('#st-grid'), paths = $$('.st-map path'), pathBy = Object.fromEntries(paths.map((p) => [p.dataset.d, p]));
       const mix = (t) => { const a = [236, 227, 208], b = [13, 90, 63]; return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`; };
-      const read = (id) => { $('#st-r-n').textContent = dById[id].bn; $('#st-r-p').textContent = price(id, tier) || 'তথ্য নেই'; };
+      const CHEAP = T('সবচেয়ে কম ভাড়া', 'Lowest rates');
+      const read = (id) => { $('#st-r-n').textContent = dn(id); $('#st-r-p').textContent = price(id, tier) || T('তথ্য নেই', 'No data'); };
       let cheapest = 'dhaka';
       function paint() {
         const ids = D.map((d) => d.id).filter((id) => isFinite(low(id, tier)));
@@ -403,19 +410,20 @@
         paths.forEach((p) => { const v = low(p.dataset.d, tier); p.style.fill = isFinite(v) ? mix(mx > mn ? Math.pow((v - mn) / (mx - mn), 0.6) : 0.5) : 'rgba(16,32,26,.04)'; });
         $('#st-min').textContent = taka(mn); $('#st-max').textContent = taka(mx) + '+';
         const t = term.trim().toLowerCase();
-        let list = D.map((d) => d.id).filter((id) => !t || (dById[id].bn + ' ' + id + ' ' + INFO[id].en).toLowerCase().includes(t));
+        const list = D.map((d) => d.id).filter((id) => !t || (dn(id) + ' ' + id + ' ' + INFO[id].en).toLowerCase().includes(t));
         if (sort === 'price') list.sort((a, b) => low(a, tier) - low(b, tier));
         else { const o = DIVS.flatMap((dv) => dv.d); list.sort((a, b) => o.indexOf(a) - o.indexOf(b)); }
         cheapest = ids.slice().sort((a, b) => low(a, tier) - low(b, tier))[0];
-        $('#st-r-s').textContent = 'সবচেয়ে কম ভাড়া'; read(cheapest);
-        $('#st-count').textContent = `${list.length} districts · per room, per night`;
+        $('#st-r-s').textContent = CHEAP; read(cheapest);
+        $('#st-count').textContent = T(`${bn(list.length)}টি জেলা · রুমপ্রতি এক রাতের ভাড়া`, `${list.length} districts · per room, per night`);
         grid.innerHTML = list.length ? list.map((id, i) => `
           <button class="tile st-tile" type="button" data-d="${id}" style="--i:${i % 9}">
             <img src="${pic(INFO[id].img, INFO[id].mx, 800)}" alt="" loading="lazy" decoding="async">
-            <span class="tile-tx"><small>${dById[id].bn}${S.d[id].named.length ? ` · ${bn(S.d[id].named.length)}টি হোটেল` : ''}</small><b>${price(id, tier) || '—'}</b></span>
-          </button>`).join('') : '<p class="dc-empty">এই নামে কোনো জেলা পাইনি।</p>';
+            <span class="tile-tx"><small>${dn(id)}${S.d[id].named.length ? T(` · ${bn(S.d[id].named.length)}টি হোটেল`, ` · ${S.d[id].named.length} hotel${S.d[id].named.length > 1 ? 's' : ''}`) : ''}</small><b>${price(id, tier) || '—'}</b></span>
+          </button>`).join('') : `<p class="dc-empty">${T('এই নামে কোনো জেলা পাইনি।', 'No district by that name.')}</p>`;
         requestAnimationFrame(() => $$('.st-tile', grid).forEach((el) => el.classList.add('in')));
-        $('#st-rail').innerHTML = Object.entries(S.h).filter(([, h]) => h.tier === tier).map(([id, h]) => hotelCard(id, h)).join('') || '<p class="dc-empty" style="color:rgba(246,241,231,.6)">এই মানের হোটেলের নাম এখনও যোগ হয়নি।</p>';
+        $('#st-rail').innerHTML = Object.entries(S.h).filter(([, h]) => h.tier === tier).map(([id, h]) => hotelCard(id, h)).join('') || `<p class="dc-empty" style="color:rgba(246,241,231,.6)">${T('এই মানের হোটেলের নাম এখনও যোগ হয়নি।', 'No named hotels in this class yet.')}</p>`;
+        fitRails();
         if (EB.lenis) EB.lenis.resize();
       }
       /* drawer with one district's prices and named hotels */
@@ -424,14 +432,14 @@
       function open(id) {
         const info = INFO[id], st = S.d[id];
         sheet.innerHTML = `
-          <button class="sheet-x" type="button" aria-label="বন্ধ করুন">×</button>
-          <div class="sheet-ph"><img src="${pic(info.img, info.mx, 800)}" alt=""><div><small lang="en">${info.en}</small><b>${dById[id].bn}</b></div></div>
+          <button class="sheet-x" type="button" aria-label="${T('বন্ধ করুন', 'Close')}">×</button>
+          <div class="sheet-ph"><img src="${pic(info.img, info.mx, 800)}" alt=""><div><small>${divName(divById[info.div])}</small><b>${dn(id)}</b></div></div>
           <div class="sheet-in">
-            <p class="sheet-tag">${esc(st.year)} · রুমপ্রতি এক রাত</p>
+            <p class="sheet-tag">${esc(st.year)} · ${T('রুমপ্রতি এক রাত', 'per room, per night')}</p>
             <dl class="sheet-tiers">${TIERS.map((t) => (price(id, t[0]) ? `<div class="${t[0] === tier ? 'on' : ''}"><dt>${t[1]}</dt><dd>${price(id, t[0])}</dd></div>` : '')).join('')}</dl>
             ${info.peak ? `<p class="sheet-note">${esc(info.peak)}</p>` : ''}
-            ${st.named.length ? `<h3>হোটেলের নাম ও দাম</h3><ul class="sheet-list">${st.named.map((h) => `<li>${h.id ? `<a href="hotel.html?id=${h.id}">` : '<div>'}<span><b>${esc(h.t)}</b><small>${esc(h.area)}</small></span><em>${esc(h.price)}</em>${h.id ? '</a>' : '</div>'}</li>`).join('')}</ul>` : ''}
-            <div class="sheet-btns"><a class="btn btn-dark" href="${U.plan([id], 3)}"><span>${dById[id].bn} ঘোরার প্ল্যান করুন</span><span class="arr">→</span></a><a class="btn btn-line" href="${U.district(id)}">জেলার গাইড</a></div>
+            ${st.named.length ? `<h3>${T('হোটেলের নাম ও দাম', 'Hotels and prices')}</h3><ul class="sheet-list">${st.named.map((h) => `<li>${h.id ? `<a href="hotel.html?id=${h.id}">` : '<div>'}<span><b>${esc(h.t)}</b><small>${esc(h.area)}</small></span><em>${esc(h.price)}</em>${h.id ? '</a>' : '</div>'}</li>`).join('')}</ul>` : ''}
+            <div class="sheet-btns"><a class="btn btn-dark" href="${U.plan([id], 3)}"><span>${T(`${dn(id)} ঘোরার প্ল্যান করুন`, `Plan a trip to ${dn(id)}`)}</span><span class="arr">→</span></a><a class="btn btn-line" href="${U.district(id)}">${T('জেলার গাইড', 'District guide')}</a></div>
           </div>`;
         sheet.classList.add('on'); back.classList.add('on'); sheet.setAttribute('aria-hidden', 'false'); sheet.scrollTop = 0; if (EB.lenis) EB.lenis.stop();
         $('.sheet-x', sheet).focus();
@@ -442,11 +450,11 @@
       grid.addEventListener('click', (e) => { const t = e.target.closest('.st-tile'); if (t) open(t.dataset.d); });
       paths.forEach((p) => {
         p.addEventListener('click', () => open(p.dataset.d));
-        p.addEventListener('pointerenter', () => { $('#st-r-s').textContent = INFO[p.dataset.d].en; read(p.dataset.d); });
-        p.addEventListener('pointerleave', () => { $('#st-r-s').textContent = 'সবচেয়ে কম ভাড়া'; read(cheapest); });
+        p.addEventListener('pointerenter', () => { $('#st-r-s').textContent = divName(divById[INFO[p.dataset.d].div]); read(p.dataset.d); });
+        p.addEventListener('pointerleave', () => { $('#st-r-s').textContent = CHEAP; read(cheapest); });
       });
       if (EB.fine) {
-        grid.addEventListener('pointerover', (e) => { const t = e.target.closest('.st-tile'); if (t) { pathBy[t.dataset.d].classList.add('hot'); $('#st-r-s').textContent = INFO[t.dataset.d].en; read(t.dataset.d); } });
+        grid.addEventListener('pointerover', (e) => { const t = e.target.closest('.st-tile'); if (t) { pathBy[t.dataset.d].classList.add('hot'); $('#st-r-s').textContent = divName(divById[INFO[t.dataset.d].div]); read(t.dataset.d); } });
         grid.addEventListener('pointerout', (e) => { const t = e.target.closest('.st-tile'); if (t) pathBy[t.dataset.d].classList.remove('hot'); });
       }
       $('#st-tier').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; tier = b.dataset.k; $$('#st-tier button').forEach((x) => x.setAttribute('aria-checked', String(x === b))); paint(); });
@@ -461,15 +469,16 @@
     /* ---- one hotel: rooms as cards, one clear way to get in touch ---- */
     hotel() {
       const S = window.EB_STAY, id = q.get('id'), h = S.h[id];
-      if (!h) return missing('হোটেলটা');
-      const info = INFO[h.d], d = dById[h.d];
-      document.title = `${h.t} — ${d.bn} — এক্সপ্লোর বাংলাদেশ`;
+      if (!h) return missing(T('হোটেলটা খুঁজে পাইনি', 'We couldn’t find that hotel'));
+      const info = INFO[h.d];
+      document.title = `${h.t} — ${dn(h.d)} — ${SITE_NAME}`;
       const others = Object.entries(S.h).filter(([k, x]) => x.d === h.d && k !== id);
       const near = h.near.map(([gid, dist]) => [gById[gid], dist]).filter((x) => x[0]);
+      const distTxt = (s) => (EB.EN ? latinDigits(s).replace(/প্রায়\s*/, 'about ').replace('কিমি', 'km') : s);
       main.innerHTML = hero({
-        img: info.img, mx: info.mx, crumbs: [['হোটেল', 'hotels.html'], [d.bn, `hotels.html?d=${h.d}`]], small: h.en, title: esc(h.t), sub: h.sum,
+        img: info.img, mx: info.mx, crumbs: [[T('হোটেল', 'Hotels'), 'hotels.html'], [dn(h.d), `hotels.html?d=${h.d}`]], small: dn(h.d), title: esc(h.t), sub: h.sum,
         extra: `<div class="ph-row" style="--k:4">${h.chips.map((c) => `<span class="chip">${esc(c)}</span>`).join('')}</div>
-          <ul class="facts" style="--k:5"><li><b>${esc(h.from.replace('রুম ভাড়া ', '').replace(' থেকে', ''))}</b><span>থেকে শুরু · ${esc(h.year)}</span></li><li><b>${bn(h.rooms.length)}</b><span>ধরনের রুম</span></li><li><b>${d.bn}</b><span>${esc(h.where.split(',')[0])}</span></li></ul>`,
+          <ul class="facts" style="--k:5"><li><b>${esc(fromPrice(h.from))}</b><span>${T('থেকে শুরু', 'and up')} · ${esc(h.year)}</span></li><li><b>${bn(h.rooms.length)}</b><span>${T('ধরনের রুম', h.rooms.length > 1 ? 'room types' : 'room type')}</span></li><li><b>${dn(h.d)}</b><span>${esc(h.where.split(',')[0])}</span></li></ul>`,
       }) + `
         <section class="sec">
           <div class="wrap g-grid">
@@ -477,29 +486,29 @@
               ${h.note ? `<p class="h-note" data-reveal>${esc(h.note)}</p>` : ''}
               <div class="rooms">${h.rooms.map((r, i) => `
                 <div class="room" data-reveal style="--d:${Math.min(i, 5) * 70}ms">
-                  <div><h3>${esc(r[0])}</h3><p>${[r[1], r[2], r[3]].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join('')}</p>${r[5] ? `<small>${r[1] ? 'সঙ্গে ' : ''}${esc(r[5])}</small>` : ''}</div>
-                  <b>${esc(r[4])}<i>এক রাত</i></b>
+                  <div><h3>${esc(r[0])}</h3><p>${[r[1], r[2], r[3]].filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join('')}</p>${r[5] ? `<small>${r[1] ? T('সঙ্গে ', 'Includes: ') : ''}${esc(r[5])}</small>` : ''}</div>
+                  <b>${esc(r[4])}<i>${T('এক রাত', 'per night')}</i></b>
                 </div>`).join('')}</div>
-              ${h.amen.length ? `<h3 class="h-sub" data-reveal>যা যা সুবিধা আছে</h3><div class="tags amen" data-reveal>${h.amen.map((a) => `<span>${esc(a)}</span>`).join('')}</div>` : ''}
-              ${h.times.length ? `<dl class="glance" style="margin-top:34px" data-reveal>${h.times.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+              ${h.amen.length ? `<h3 class="h-sub" data-reveal>${T('যা যা সুবিধা আছে', 'Facilities')}</h3><div class="tags amen" data-reveal>${h.amen.map((a) => `<span>${esc(a)}</span>`).join('')}</div>` : ''}
+              ${h.times.length ? `<dl class="glance" style="margin-top:34px" data-reveal>${h.times.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(EB.EN ? latinDigits(v) : v)}</dd></div>`).join('')}</dl>` : ''}
             </div>
             <aside class="g-side" data-reveal>
               <div class="g-where">${miniMap({ on: [h.d], pulse: h.d })}<p>${esc(h.where)}</p></div>
               <div class="g-actions">
-                ${h.phone ? `<a class="btn btn-dark" href="tel:${h.phone}"><span>কল করুন · ${h.phone}</span></a>` : ''}
-                ${h.book ? `<a class="btn btn-line" href="${h.book}" target="_blank" rel="noopener nofollow">অফিসিয়াল সাইটে বুক করুন ↗</a>` : (h.web ? `<a class="btn btn-line" href="${h.web}" target="_blank" rel="noopener nofollow">ওয়েবসাইট ↗</a>` : '')}
-                ${h.ll.length === 2 ? `<a class="btn btn-line" href="https://www.google.com/maps/search/?api=1&query=${h.ll[0]},${h.ll[1]}" target="_blank" rel="noopener">গুগল ম্যাপে খুলুন</a>` : ''}
+                ${h.phone ? `<a class="btn btn-dark" href="tel:${h.phone}"><span>${T('কল করুন', 'Call')} · ${h.phone}</span></a>` : ''}
+                ${h.book ? `<a class="btn btn-line" href="${h.book}" target="_blank" rel="noopener nofollow">${T('অফিসিয়াল সাইটে বুক করুন', 'Book on the official site')} ↗</a>` : (h.web ? `<a class="btn btn-line" href="${h.web}" target="_blank" rel="noopener nofollow">${T('ওয়েবসাইট', 'Website')} ↗</a>` : '')}
+                ${h.ll.length === 2 ? `<a class="btn btn-line" href="https://www.google.com/maps/search/?api=1&query=${h.ll[0]},${h.ll[1]}" target="_blank" rel="noopener">${T('গুগল ম্যাপে খুলুন', 'Open in Google Maps')}</a>` : ''}
               </div>
             </aside>
           </div>
         </section>
-        ${near.length ? `<section class="sec cream">${head('কাছেই', 'nearby', ['হোটেল থেকে', 'হাঁটা দূরত্বে'], `<a class="link-arrow" href="${U.district(h.d)}" data-reveal>${d.bn} জেলা <span class="arr">→</span></a>`)}<div class="wrap cards4">${near.map(([g, dist], i) => tile(g, i).replace(`<small>${dById[g.d].bn}</small>`, `<small>${esc(dist)}</small>`)).join('')}</div></section>` : ''}
-        ${others.length ? `<section class="sec dark">${head(d.bn, 'more stays', ['এই জেলায়', 'আরও হোটেল'])}<div class="rail" data-drag>${others.map(([k, x]) => hotelCard(k, x)).join('')}</div></section>` : ''}`;
+        ${near.length ? `<section class="sec cream">${head(T('কাছেই', 'Nearby'), T('আশেপাশে', 'close by'), [T('হোটেল থেকে', 'A short trip'), T('হাঁটা দূরত্বে', 'from the hotel')], `<a class="link-arrow" href="${U.district(h.d)}" data-reveal>${T(`${dn(h.d)} জেলা`, `${dn(h.d)} district`)} <span class="arr">→</span></a>`)}<div class="wrap cards4">${near.map(([g, dist], i) => tile(g, i).replace(`<small>${dn(g.d)}</small>`, `<small>${esc(distTxt(dist))}</small>`)).join('')}</div></section>` : ''}
+        ${others.length ? `<section class="sec dark">${head(dn(h.d), T('আরও থাকার জায়গা', 'more stays'), [T('এই জেলায়', 'More hotels'), T('আরও হোটেল', 'in this district')])}<div class="rail" data-drag>${others.map(([k, x]) => hotelCard(k, x)).join('')}</div>${dragHint()}</section>` : ''}`;
     },
 
     /* ---- my travel map: tap what you have seen, watch the sun fill up ---- */
     mymap() {
-      document.title = 'আমার ভ্রমণ ম্যাপ — এক্সপ্লোর বাংলাদেশ';
+      document.title = `${T('আমার ভ্রমণ ম্যাপ', 'My travel map')} — ${SITE_NAME}`;
       const KEY = 'eb-visited-v1', COLORS = ['#e2323f', '#c8a25a', '#2fa37a', '#3d86b8', '#d0764f'];
       let seen = new Set(), color = COLORS[0];
       try { const s = JSON.parse(localStorage.getItem(KEY) || '{}'); seen = new Set((s.ids || []).filter((x) => dById[x])); color = COLORS.includes(s.color) ? s.color : color; } catch (e) { /* ignore */ }
@@ -507,10 +516,10 @@
       if (shared && /^[0-9a-f]{16}$/.test(shared)) { const bits = BigInt('0x' + shared); seen = new Set(D.filter((d, i) => (bits >> BigInt(i)) & 1n).map((d) => d.id)); }
       if (dById[q.get('visited')]) seen.add(q.get('visited'));
       const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ ids: [...seen], color })); } catch (e) { /* ignore */ } };
-      const level = (n) => (n === 0 ? 'যাত্রা শুরু হোক' : n < 8 ? 'নতুন পথিক' : n < 20 ? 'ঘুরে বেড়ানো মানুষ' : n < 40 ? 'পাকা ভ্রমণপিপাসু' : n < 64 ? 'দেশ-চেনা মুসাফির' : 'পুরো বাংলাদেশ দেখা!');
+      const level = (n) => (n === 0 ? T('যাত্রা শুরু হোক', 'Let the journey begin') : n < 8 ? T('নতুন পথিক', 'New traveller') : n < 20 ? T('ঘুরে বেড়ানো মানুষ', 'Wanderer') : n < 40 ? T('পাকা ভ্রমণপিপাসু', 'Seasoned explorer') : n < 64 ? T('দেশ-চেনা মুসাফির', 'Knows the country') : T('পুরো বাংলাদেশ দেখা!', 'Seen all of Bangladesh!'));
       const C = 2 * Math.PI * 88;
       main.innerHTML = hero({
-        img: '43ff844d', mx: 1920, short: true, small: 'my travel map', title: 'বাংলাদেশের কতটা <em>দেখেছেন?</em>', sub: 'ঘুরে আসা জেলায় ট্যাপ করুন। সূর্যটা ভরে উঠবে।',
+        img: '43ff844d', mx: 1920, short: true, small: T('আমার ভ্রমণ ম্যাপ', 'my travel map'), title: T('বাংলাদেশের কতটা <em>দেখেছেন?</em>', 'How much of Bangladesh <em>have you seen?</em>'), sub: T('ঘুরে আসা জেলায় ট্যাপ করুন। সূর্যটা ভরে উঠবে।', 'Tap the districts you’ve been to and watch the sun fill up.'),
       }) + `
         <section class="sec dark mm">
           <div class="wrap mm-grid">
@@ -518,25 +527,25 @@
             <div class="mm-side">
               <div class="mm-sun">
                 <svg viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="88" class="trk"/><circle cx="100" cy="100" r="88" class="prg" id="mm-prg" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 100 100)"/><circle cx="100" cy="100" r="66" class="core" id="mm-core"/></svg>
-                <div><b id="mm-n">০</b><span>/ ৬৪ জেলা</span></div>
+                <div><b id="mm-n">${bn(0)}</b><span>${T('/ ৬৪ জেলা', '/ 64 districts')}</span></div>
               </div>
               <p class="mm-level" id="mm-level" aria-live="polite"></p>
-              <ul class="mm-divs" id="mm-divs">${DIVS.map((dv) => `<li data-div="${dv.id}"><span>${dv.bn.replace(' বিভাগ', '')}</span><i><u></u></i><em></em></li>`).join('')}</ul>
-              <div class="mm-colors" role="radiogroup" aria-label="রং">${COLORS.map((c) => `<button type="button" role="radio" style="--c:${c}" data-c="${c}" aria-label="রং ${c}"></button>`).join('')}</div>
+              <ul class="mm-divs" id="mm-divs">${DIVS.map((dv) => `<li data-div="${dv.id}"><span>${divShort(dv)}</span><i><u></u></i><em></em></li>`).join('')}</ul>
+              <div class="mm-colors" role="radiogroup" aria-label="${T('রং', 'Colour')}">${COLORS.map((c, i) => `<button type="button" role="radio" style="--c:${c}" data-c="${c}" aria-label="${T(`রং ${bn(i + 1)}`, `Colour ${i + 1}`)}"></button>`).join('')}</div>
               <div class="mm-btns">
-                <button class="btn btn-gold" type="button" id="mm-dl"><span>ছবি ডাউনলোড</span></button>
-                <button class="btn btn-ghost" type="button" id="mm-share">লিংক কপি</button>
-                <button class="btn btn-ghost" type="button" id="mm-reset">মুছে ফেলুন</button>
+                <button class="btn btn-gold" type="button" id="mm-dl"><span>${T('ছবি ডাউনলোড', 'Download image')}</span></button>
+                <button class="btn btn-ghost" type="button" id="mm-share">${T('লিংক কপি', 'Copy link')}</button>
+                <button class="btn btn-ghost" type="button" id="mm-reset">${T('মুছে ফেলুন', 'Clear')}</button>
               </div>
             </div>
           </div>
         </section>
         <section class="sec cream">
-          ${head('নাম ধরে বাছুন', 'tap to mark', ['তালিকা থেকে', 'টিক দিন'])}
-          <div class="wrap mm-lists">${DIVS.map((dv) => `<div><h3>${dv.bn}<span lang="en">${dv.en}</span></h3><div class="mm-chips">${dv.d.map((id) => `<button type="button" data-d="${id}" aria-pressed="false">${dById[id].bn}</button>`).join('')}</div></div>`).join('')}</div>
+          ${head(T('নাম ধরে বাছুন', 'Pick by name'), T('টিক দিন', 'tap to mark'), [T('তালিকা থেকে', 'Tick them off'), T('টিক দিন', 'the list')])}
+          <div class="wrap mm-lists">${DIVS.map((dv) => `<div><h3>${divName(dv)}</h3><div class="mm-chips">${dv.d.map((id) => `<button type="button" data-d="${id}" aria-pressed="false">${dn(id)}</button>`).join('')}</div></div>`).join('')}</div>
         </section>
         <section class="sec" id="mm-next-sec">
-          ${head('এরপর কোথায়', 'not yet seen', ['এখনও', 'বাকি আছে'], '<a class="link-arrow" href="explore.html" data-reveal>সব জেলা <span class="arr">→</span></a>')}
+          ${head(T('এরপর কোথায়', 'Where next'), T('এখনও দেখা হয়নি', 'not yet seen'), [T('এখনও', 'Still'), T('বাকি আছে', 'waiting for you')], `<a class="link-arrow" href="explore.html" data-reveal>${T('সব জেলা', 'All districts')} <span class="arr">→</span></a>`)}
           <div class="wrap cards4" id="mm-next"></div>
         </section>
         <div class="toast" id="toast" role="status" aria-live="polite"></div>`;
@@ -555,39 +564,39 @@
         $$('.mm-colors button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.c === color)));
         const rest = want.filter((x) => !seen.has(x)).concat(D.map((d) => d.id).filter((x) => !seen.has(x) && !want.includes(x))).slice(0, 4);
         $('#mm-next-sec').hidden = !rest.length;
-        $('#mm-next').innerHTML = rest.map((id2) => `<a class="tile" href="${U.district(id2)}" data-cursor="ঘুরে দেখুন"><img src="${pic(INFO[id2].img, INFO[id2].mx, 800)}" alt="" loading="lazy"><span class="tile-tx"><small lang="en">${INFO[id2].en}</small><b>${dById[id2].bn}</b><p>${esc(INFO[id2].tag)}</p></span></a>`).join('');
+        $('#mm-next').innerHTML = rest.map((id2) => `<a class="tile" href="${U.district(id2)}" data-cursor="${T('ঘুরে দেখুন', 'Explore')}"><img src="${pic(INFO[id2].img, INFO[id2].mx, 800)}" alt="" loading="lazy"><span class="tile-tx"><small>${divName(divById[INFO[id2].div])}</small><b>${dn(id2)}</b><p>${esc(INFO[id2].tag)}</p></span></a>`).join('');
       }
-      const toggle = (id2) => { seen.has(id2) ? seen.delete(id2) : seen.add(id2); save(); paint(id2); if (seen.size === 64) say('অভিনন্দন! পুরো বাংলাদেশ ঘোরা শেষ।'); };
+      const toggle = (id2) => { seen.has(id2) ? seen.delete(id2) : seen.add(id2); save(); paint(id2); if (seen.size === 64) say(T('অভিনন্দন! পুরো বাংলাদেশ ঘোরা শেষ।', 'Congratulations! You’ve seen all of Bangladesh.')); };
       paths.forEach((p) => {
-        p.setAttribute('tabindex', '0'); p.setAttribute('role', 'button'); p.setAttribute('aria-label', dById[p.dataset.d].bn);
+        p.setAttribute('tabindex', '0'); p.setAttribute('role', 'button'); p.setAttribute('aria-label', dn(p.dataset.d));
         p.addEventListener('click', () => toggle(p.dataset.d));
         p.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(p.dataset.d); } });
       });
       const mm = $('#mm-map');
       if (EB.fine) {
-        mm.addEventListener('pointermove', (e) => { const p = e.target.closest('path'); tip.classList.toggle('on', !!p); if (!p) return; tip.textContent = dById[p.dataset.d].bn + (seen.has(p.dataset.d) ? ' ✓' : ''); const r = mm.getBoundingClientRect(); tip.style.transform = `translate(${e.clientX - r.left + 16}px,${e.clientY - r.top + 16}px)`; });
+        mm.addEventListener('pointermove', (e) => { const p = e.target.closest('path'); tip.classList.toggle('on', !!p); if (!p) return; tip.textContent = dn(p.dataset.d) + (seen.has(p.dataset.d) ? ' ✓' : ''); const r = mm.getBoundingClientRect(); tip.style.transform = `translate(${e.clientX - r.left + 16}px,${e.clientY - r.top + 16}px)`; });
         mm.addEventListener('pointerleave', () => tip.classList.remove('on'));
       }
       $('.mm-lists').addEventListener('click', (e) => { const b = e.target.closest('button[data-d]'); if (b) toggle(b.dataset.d); });
       $('.mm-colors').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; color = b.dataset.c; save(); paint(); });
-      $('#mm-reset').addEventListener('click', () => { if (!seen.size) return; if (confirm('সব দাগ মুছে ফেলবেন?')) { seen.clear(); save(); paint(); } });
+      $('#mm-reset').addEventListener('click', () => { if (!seen.size) return; if (confirm(T('সব দাগ মুছে ফেলবেন?', 'Clear all your marks?'))) { seen.clear(); save(); paint(); } });
       $('#mm-share').addEventListener('click', async () => {
         let bits = 0n; D.forEach((d, i) => { if (seen.has(d.id)) bits |= 1n << BigInt(i); });
         const url = location.origin + location.pathname + '?v=' + bits.toString(16).padStart(16, '0');
-        try { await navigator.clipboard.writeText(url); say('লিংক কপি হয়েছে'); } catch (e) { say('লিংক কপি করা গেল না'); }
+        try { await navigator.clipboard.writeText(url); say(T('লিংক কপি হয়েছে', 'Link copied')); } catch (e) { say(T('লিংক কপি করা গেল না', 'Couldn’t copy the link')); }
       });
       $('#mm-dl').addEventListener('click', () => {
         const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-        const c = cv.getContext('2d');
+        const c = cv.getContext('2d'), font = '"Anek Bangla", sans-serif';
         c.fillStyle = '#03190f'; c.fillRect(0, 0, W, H);
-        c.fillStyle = '#e7d3a4'; c.font = '500 34px "Anek Bangla", sans-serif'; c.textAlign = 'center'; c.fillText('আমার ভ্রমণ ম্যাপ', W / 2, 96);
-        c.fillStyle = '#f6f1e7'; c.font = '600 84px "Anek Bangla", sans-serif'; c.fillText(`${bn(seen.size)} / ৬৪ জেলা`, W / 2, 196);
-        c.font = '400 36px "Anek Bangla", sans-serif'; c.fillStyle = 'rgba(246,241,231,.75)'; c.fillText(level(seen.size), W / 2, 250);
+        c.fillStyle = '#e7d3a4'; c.font = `500 34px ${font}`; c.textAlign = 'center'; c.fillText(T('আমার ভ্রমণ ম্যাপ', 'My travel map'), W / 2, 96);
+        c.fillStyle = '#f6f1e7'; c.font = `600 84px ${font}`; c.fillText(T(`${bn(seen.size)} / ৬৪ জেলা`, `${seen.size} / 64 districts`), W / 2, 196);
+        c.font = `400 36px ${font}`; c.fillStyle = 'rgba(246,241,231,.75)'; c.fillText(level(seen.size), W / 2, 250);
         const sc = 1.3; c.save(); c.translate((W - 600 * sc) / 2, 280); c.scale(sc, sc); c.lineWidth = 0.8; c.lineJoin = 'round';
         D.forEach((d) => { const p = new Path2D(d.d); c.fillStyle = seen.has(d.id) ? color : 'rgba(246,241,231,.06)'; c.fill(p); c.strokeStyle = 'rgba(231,211,164,.55)'; c.stroke(p); });
         c.restore();
         c.fillStyle = 'rgba(246,241,231,.6)'; c.font = 'italic 30px "Cormorant Garamond", serif'; c.fillText('explorebangladesh.xyz', W / 2, H - 44);
-        cv.toBlob((blob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'my-bangladesh-map.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); say('ছবি ডাউনলোড হচ্ছে'); }, 'image/png');
+        cv.toBlob((blob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'my-bangladesh-map.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); say(T('ছবি ডাউনলোড হচ্ছে', 'Downloading the image')); }, 'image/png');
       });
       if (shared || q.get('visited')) save();
       paint();
@@ -595,51 +604,39 @@
 
     /* ---- six seasons: scroll turns the year; the sky, the weather and the photo change with it ---- */
     seasons() {
-      document.title = 'ষড়ঋতু — কোন ঋতুতে কোথায় — এক্সপ্লোর বাংলাদেশ';
-      const SS = EB.SEASONS, PICKS = window.EB_SEASON_PICKS, N = SS.length;
-      const GREG = ['এপ্রিল – মে', 'জুন – জুলাই', 'আগস্ট – সেপ্টেম্বর', 'অক্টোবর – নভেম্বর', 'ডিসেম্বর – জানুয়ারি', 'ফেব্রুয়ারি – মার্চ'];
-      /* the best-known picks lead each season; the rest follow from the data */
-      const LEAD = {
-        grishmo: ['mangal-shobhajatra', 'kansat-mango-market', 'srimangal-pineapple', 'khagrachhari-amrapali-mango', 'chuadanga-mango'],
-        borsha: ['ratargul-swamp-forest', 'tanguar-haor', 'sajek-valley', 'srimangal-tea-gardens', 'bichanakandi', 'jaflong', 'chalan-beel'],
-        shorot: ['nafakhum-waterfall', 'tanguar-haor', 'ratargul-swamp-forest', 'sajek-valley', 'alutila-cave', 'lalakhal'],
-        hemonto: ['kuakata-sea-beach', 'nafakhum-waterfall', 'lalakhal', 'karamjal', 'kantajew-temple', 'chandranath-hill-sitakunda'],
-        sheet: ['kuakata-sea-beach', 'st-martins-island', 'sajek-valley', 'tanguar-haor', 'lalbagh-fort', 'magura-winter-pitha', 'rajshahi-khejur-gur'],
-        boshonto: ['srimangal-tea-gardens', 'ahsan-manzil', 'lalbagh-fort', 'star-mosque-dhaka', 'alta-dighi-national-park'],
-      };
-      const list = Object.fromEntries(SS.map((s) => { const all = PICKS[s.key] || [], lead = LEAD[s.key].filter((x) => all.includes(x)); return [s.key, lead.concat(all.filter((x) => !lead.includes(x))).map((x) => gById[x]).filter(Boolean)]; }));
-      const now = new Date(), md = (now.getMonth() + 1) * 100 + now.getDate();
-      const cur = md >= 1216 || md < 215 ? 4 : md < 415 ? 5 : md < 615 ? 0 : md < 816 ? 1 : md < 1016 ? 2 : 3;
+      document.title = `${T('ষড়ঋতু — কোন ঋতুতে কোথায়', 'Six seasons — where to go when')} — ${SITE_NAME}`;
+      const SS = EB.SEASONS, N = SS.length, cur = EB.CUR_SEASON;
+      const list = Object.fromEntries(SS.map((s) => [s.key, EB.seasonList(s.key)]));
       const PAL = [['#f6d98a', '#fbefc8', '#3a2606', '#d9760f'], ['#234f56', '#5f8f8a', '#f1f7f3', '#bfe3d6'], ['#a9d4ee', '#eef7fb', '#0c2b40', '#2f7fb4'], ['#e3b468', '#f6e6c0', '#3a2408', '#b5651d'], ['#b9c6d0', '#eef1f3', '#1c2b36', '#5d7fa3'], ['#f3b7a0', '#fdebd9', '#4a1414', '#cc2633']]
         .map((r) => r.map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]));
       const VARS = ['--s1', '--s2', '--sink', '--sacc'];
 
       main.innerHTML = `
-        <section class="sz" id="sz" aria-label="ছয় ঋতু">
-          <h1 class="sr">ষড়ঋতু — কোন ঋতুতে কোথায় যাবেন</h1>
+        <section class="sz" id="sz" aria-label="${T('ছয় ঋতু', 'Six seasons')}">
+          <h1 class="sr">${T('ষড়ঋতু — কোন ঋতুতে কোথায় যাবেন', 'Six seasons — where to go in each')}</h1>
           <div class="sz-stage">
             <div class="sz-sky" aria-hidden="true"></div>
             <div class="sz-fx" aria-hidden="true">${Array.from({ length: 30 }, (_, i) => `<i style="--x:${(i * 37 + 7) % 100};--dl:${-((i * 53) % 90) / 10}s;--sp:${0.7 + ((i * 29) % 60) / 100};--sz:${0.6 + ((i * 17) % 80) / 100}"></i>`).join('')}</div>
-            <div class="sz-top wrap"><span class="eyebrow">ষড়ঋতুর দেশ <i lang="en">the year turns</i></span><span class="jr-count"><b id="sz-n">০১</b><i>/ ০৬</i></span></div>
+            <div class="sz-top wrap"><span class="eyebrow">${T('ষড়ঋতুর দেশ', 'Land of six seasons')} <i>${T('বছর ঘোরে', 'the year turns')}</i></span><span class="jr-count"><b id="sz-n">${bn('01')}</b><i>/ ${bn('06')}</i></span></div>
             <div class="wrap sz-grid">
               <div class="sz-texts">${SS.map((s, i) => `
                 <article class="sz-text" data-i="${i}">
-                  <div class="sz-when" style="--k:0"><b>${s.months}</b><span>${GREG[i]}</span>${i === cur ? '<em>এখন চলছে</em>' : ''}</div>
-                  <h2 class="display" style="--k:1"><span class="ln"><span>${s.bn}</span></span></h2>
-                  <p style="--k:2">${s.mood}</p>
-                  <div class="sz-thumbs" style="--k:3">${list[s.key].slice(1, 4).map((g) => `<a href="${U.guide(g.id)}" title="${esc(g.t)}" data-cursor="দেখুন"><img src="${pic(g.img, g.mx, 400)}" alt="${esc(g.t)}" loading="lazy"></a>`).join('')}<button class="link-arrow" type="button" data-go="${i}">${bn(list[s.key].length)}টা জায়গা ও খাবার <span class="arr">↓</span></button></div>
+                  <div class="sz-when" style="--k:0"><b>${L(s.months)}</b><span>${L(s.greg)}</span>${i === cur ? `<em>${T('এখন চলছে', 'Happening now')}</em>` : ''}</div>
+                  <h2 class="display" style="--k:1"><span class="ln"><span>${L(s.name)}</span></span></h2>
+                  <p style="--k:2">${L(s.mood)}</p>
+                  <div class="sz-thumbs" style="--k:3">${list[s.key].slice(1, 4).map((g) => `<a href="${U.guide(g.id)}" title="${esc(g.t)}" data-cursor="${T('দেখুন', 'View')}"><img src="${pic(g.img, g.mx, 400)}" alt="${esc(g.t)}" loading="lazy"></a>`).join('')}<button class="link-arrow" type="button" data-go="${i}">${T(`${bn(list[s.key].length)}টা জায়গা ও খাবার`, `${list[s.key].length} places and foods`)} <span class="arr">↓</span></button></div>
                 </article>`).join('')}</div>
-              <div class="sz-arch"><div class="sz-arch-in">${SS.map((s, i) => { const g = list[s.key][0]; return g ? `<a href="${U.guide(g.id)}" data-cursor="দেখুন" aria-label="${esc(g.t)}"><img src="${pic(g.img, g.mx, 1280)}" alt="" ${i > 1 ? 'loading="lazy"' : ''}><span>${esc(g.t)} · ${dById[g.d].bn}</span></a>` : '<a></a>'; }).join('')}</div></div>
+              <div class="sz-arch"><div class="sz-arch-in">${SS.map((s, i) => { const g = list[s.key][0]; return g ? `<a href="${U.guide(g.id)}" data-cursor="${T('দেখুন', 'View')}" aria-label="${esc(g.t)}"><img src="${pic(g.img, g.mx, 1280)}" alt="" ${i > 1 ? 'loading="lazy"' : ''}><span>${esc(g.t)} · ${dn(g.d)}</span></a>` : '<a></a>'; }).join('')}</div></div>
             </div>
-            <div class="sz-wheel" aria-hidden="true"><div class="sz-ring"></div><div class="sz-sun"></div>${SS.map((s, i) => `<span style="--a:${i * 60}deg">${s.bn}</span>`).join('')}</div>
-            <nav class="sz-marks" aria-label="ঋতু">${SS.map((s, i) => `<button type="button" data-i="${i}">${s.bn}</button>`).join('')}</nav>
+            <div class="sz-wheel" aria-hidden="true"><div class="sz-ring"></div><div class="sz-sun"></div>${SS.map((s, i) => `<span style="--a:${i * 60}deg">${L(s.name)}</span>`).join('')}</div>
+            <nav class="sz-marks" aria-label="${T('ঋতু', 'Seasons')}">${SS.map((s, i) => `<button type="button" data-i="${i}">${L(s.name)}</button>`).join('')}</nav>
           </div>
         </section>
         <div class="dc-bar" id="sz-bar"><div class="wrap">
-          <div class="seg" id="sz-season" role="radiogroup" aria-label="ঋতু">${SS.map((s, i) => `<button type="button" role="radio" data-i="${i}" aria-checked="false">${s.bn}</button>`).join('')}</div>
-          <div class="dc-pills" style="justify-content:flex-end" role="group" aria-label="ধরন"><button class="pill" type="button" data-t="" aria-pressed="true">সব</button>${Object.keys(TYPE).map((k) => `<button class="pill" type="button" data-t="${k}" aria-pressed="false">${TYPE[k].bn}</button>`).join('')}</div>
+          <div class="seg" id="sz-season" role="radiogroup" aria-label="${T('ঋতু', 'Season')}">${SS.map((s, i) => `<button type="button" role="radio" data-i="${i}" aria-checked="false">${L(s.name)}</button>`).join('')}</div>
+          <div class="dc-pills" style="justify-content:flex-end" role="group" aria-label="${T('ধরন', 'Type')}"><button class="pill" type="button" data-t="" aria-pressed="true">${T('সব', 'All')}</button>${Object.keys(TYPE).map((k) => `<button class="pill" type="button" data-t="${k}" aria-pressed="false">${TYPE[k].name}</button>`).join('')}</div>
         </div></div>
-        <section class="sec" style="padding-top:40px" id="sz-list"><div class="wrap"><p class="dc-count" id="sz-count" lang="en"></p><div class="dc-grid" id="sz-gridl"></div><div id="sz-more" style="height:1px"></div></div></section>`;
+        <section class="sec" style="padding-top:40px" id="sz-list"><div class="wrap"><p class="dc-count" id="sz-count"></p><div class="dc-grid" id="sz-gridl"></div><div id="sz-more" style="height:1px"></div></div></section>`;
 
       /* ----- the turning year ----- */
       const sec = $('#sz'), stage = $('.sz-stage'), texts = $$('.sz-text'), imgs = $$('.sz-arch-in a'), marks = $$('.sz-marks button'), wheel = $('.sz-wheel'), nEl = $('#sz-n');
@@ -680,8 +677,8 @@
       };
       const apply = () => {
         items = list[SS[season].key].filter((g) => !type || g.type === type);
-        grid.innerHTML = items.length ? '' : '<p class="dc-empty">এই ঋতুতে এই ধরনের কিছু নেই।</p>'; shown = 0;
-        $('#sz-count').textContent = `${items.length} for ${SS[season].en.toLowerCase()}`;
+        grid.innerHTML = items.length ? '' : `<p class="dc-empty">${T('এই ঋতুতে এই ধরনের কিছু নেই।', 'Nothing of this kind for this season.')}</p>`; shown = 0;
+        $('#sz-count').textContent = T(`${L(SS[season].name)} · ${bn(items.length)}টি`, `${items.length} for ${L(SS[season].name).toLowerCase()}`);
         $$('#sz-season button').forEach((b) => b.setAttribute('aria-checked', String(+b.dataset.i === season)));
         $('#sz-bar').style.setProperty('--tint', SS[season].tint);
         more();
@@ -719,29 +716,43 @@
       }
     });
   }
+  /* rails: when every item fits on screen they line up under the section title and stop acting like a scroller */
+  function fitRails() {
+    $$('.rail, .circles').forEach((el) => {
+      el.classList.remove('fits');
+      const fits = el.scrollWidth <= el.clientWidth + 4;
+      el.classList.toggle('fits', fits);
+      const hint = el.nextElementSibling;
+      if (hint && hint.classList.contains('rail-hint')) hint.hidden = fits;
+    });
+  }
   function dragRails() {
     if (!EB.fine) return;
     $$('[data-drag]').forEach((el) => {
+      if (el.dataset.dragOn) return; el.dataset.dragOn = '1';
       let down = false, x0 = 0, s0 = 0, moved = 0;
-      el.addEventListener('pointerdown', (e) => { if (e.button) return; down = true; x0 = e.clientX; s0 = el.scrollLeft; moved = 0; });
+      el.addEventListener('pointerdown', (e) => { if (e.button || el.classList.contains('fits')) return; down = true; x0 = e.clientX; s0 = el.scrollLeft; moved = 0; });
       addEventListener('pointermove', (e) => { if (!down) return; moved = e.clientX - x0; if (Math.abs(moved) > 6) el.classList.add('dragging'); el.scrollLeft = s0 - moved; });
       addEventListener('pointerup', () => { if (!down) return; down = false; setTimeout(() => el.classList.remove('dragging'), 0); });
-      el.addEventListener('click', (e) => { if (Math.abs(moved) > 6) { e.preventDefault(); e.stopPropagation(); } }, true);
+      el.addEventListener('click', (e) => { if (Math.abs(moved) > 6) { e.preventDefault(); e.stopPropagation(); moved = 0; } }, true);
       el.addEventListener('dragstart', (e) => e.preventDefault());
     });
   }
   function after() {
     EB.observe(main);
     $$('[data-map]').forEach((m) => new IntersectionObserver((e, o) => { if (e[0].isIntersecting) { m.classList.add('in'); o.disconnect(); } }, { threshold: 0.3 }).observe(m));
+    fitRails();
     dragRails();
     if (EB.lenis) EB.lenis.resize();
   }
 
   (pages[page] || (() => {}))();
   after();
+  addEventListener('resize', fitRails);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitRails);
 
   /* hero parallax */
   const media = $('.ph-media');
   if (media && !EB.reduce) EB.onFrame((y) => { if (y < innerHeight * 1.2) media.style.transform = `translate3d(0,${y * 0.2}px,0)`; });
-  addEventListener('load', () => EB.lenis && EB.lenis.resize());
+  addEventListener('load', () => { fitRails(); if (EB.lenis) EB.lenis.resize(); });
 })();

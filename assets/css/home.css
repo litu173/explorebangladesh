@@ -405,3 +405,8 @@
 
 /* grid children must be allowed to shrink, or the season pills push the column wider than the screen */
 .ss-left, .ss-right, .mp-copy, .mp-map { min-width: 0; }
+
+/* Bangla page: accents in Anek instead of Latin italic */
+html[lang='bn'] .eyebrow i, html[lang='bn'] .pl-step, html[lang='bn'] .tr-hint, html[lang='bn'] .tr-no { font-family: var(--f-display); font-style: normal; }
+html[lang='bn'] .eyebrow i { font-size: 13.5px; font-weight: 400; letter-spacing: 0.02em; opacity: 0.8; }
+html[lang='bn'] .pl-step { font-size: 14px; }

@@ -40,9 +40,11 @@
   EB.damp = (a, b, lambda, dt) => EB.lerp(a, b, 1 - Math.exp(-lambda * dt / 1000));
 
   /* ---- preloader ---- */
-  const pre = document.querySelector('.preloader');
+  const seen = root.classList.contains('seen');
+  const pre = seen ? null : document.querySelector('.preloader');
   const ready = () => {
     if (pre) pre.classList.add('done');
+    try { sessionStorage.setItem('eb-seen', '1'); } catch (e) { /* ignore */ }
     root.classList.add('is-ready');
     /* above-the-fold pieces never cross the reveal line, so show them straight away */
     document.querySelectorAll('.hero [data-reveal], .hero [data-lines]').forEach((el) => el.classList.add('in'));
@@ -127,7 +129,7 @@
     const a = e.target.closest('a[href]');
     if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button || a.target === '_blank' || reduce) return;
     const href = a.getAttribute('href');
-    if (!/^[a-z-]+\.html(\?|#|$)/.test(href)) return;
+    if (!/^(\.\.\/|en\/)?[a-z-]+\.html(\?|#|$)/.test(href)) return;
     const url = new URL(a.href);
     if (url.pathname === location.pathname && url.search === location.search) return;
     e.preventDefault();
@@ -135,9 +137,25 @@
     veil.className = 'page-veil';
     document.body.appendChild(veil);
     requestAnimationFrame(() => requestAnimationFrame(() => veil.classList.add('on')));
-    setTimeout(() => { location.href = a.href; }, 520);
+    setTimeout(() => { location.href = a.href; }, 460);
   });
   addEventListener('pageshow', (e) => { if (e.persisted) document.querySelectorAll('.page-veil').forEach((v) => v.remove()); });
+
+  /* ---- images fade in when they arrive (catches images added later by the page scripts too) ---- */
+  const prep = (im) => {
+    if (im.dataset.fi || im.closest('.preloader')) return;
+    im.dataset.fi = '1';
+    if (im.complete && im.naturalWidth) return;
+    im.classList.add('fi');
+    const done = () => im.classList.add('ld');
+    im.addEventListener('load', done, { once: true });
+    im.addEventListener('error', done, { once: true });
+  };
+  document.querySelectorAll('img').forEach(prep);
+  new MutationObserver((list) => list.forEach((m) => m.addedNodes.forEach((n) => {
+    if (n.nodeType !== 1) return;
+    if (n.tagName === 'IMG') prep(n); else n.querySelectorAll('img').forEach(prep);
+  }))).observe(document.body, { childList: true, subtree: true });
 
   /* ---- in-page anchors use the smooth scroller ---- */
   document.addEventListener('click', (e) => {

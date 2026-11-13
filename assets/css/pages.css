@@ -5,9 +5,6 @@
 .nav a[aria-current='page'] { opacity: 1; }
 .nav a[aria-current='page']::after { transform: scaleX(1); }
 
-/* page-in wipe (pure CSS so it can never get stuck) */
-.page-in { position: fixed; inset: 0; z-index: 270; background: var(--paddy-950); pointer-events: none; animation: pageIn 0.95s var(--ease-io) 0.1s both; }
-@keyframes pageIn { from { clip-path: inset(0); } to { clip-path: inset(0 0 100% 0); visibility: hidden; } }
 
 body.inner { background: var(--ivory); }
 .sec { position: relative; padding: clamp(70px, 12vh, 150px) 0; }
@@ -285,7 +282,6 @@ body.inner { background: var(--ivory); }
 @media (prefers-reduced-motion: reduce) {
   .ph .wrap > *, .dc-grid .tile, .stop-tx > * { opacity: 1; transform: none; }
   .stop-ph { clip-path: none; }
-  .page-in { display: none; }
 }
 
 .lede-more { margin-top: 18px; font-size: 16px; }
@@ -524,3 +520,42 @@ body.inner { background: var(--ivory); }
 
 /* comfortable tap targets on touch screens */
 .crumbs a, .crumbs b { display: inline-block; padding-block: 7px; }
+
+/* ===================== rails that size themselves to their content =====================
+   Items start exactly under the section title (the .wrap content edge). When they all fit,
+   the row stops being a scroller: no drag cursor, no hint, no stagger. */
+.rail, .circles { --edge: calc((100% - min(100%, 1360px)) / 2 + var(--gutter)); padding-inline: var(--edge); scroll-padding-inline: var(--edge); }
+.rail-hint { padding-inline: calc((100% - min(100%, 1360px)) / 2 + var(--gutter)); }
+.rail-hint[hidden] { display: none; }
+.rail.fits, .circles.fits { cursor: default; overflow: visible; }
+.rail.fits > :nth-child(even) { margin-top: 0; }
+.rail.fits > * { width: clamp(240px, 23vw, 320px); }
+@media (max-width: 900px) { .rail.fits > * { width: 68vw; } }
+
+/* ===================== division dropdown ===================== */
+.dd { position: relative; flex: none; }
+.dd select {
+  appearance: none; -webkit-appearance: none; height: 44px; min-width: 210px; padding: 0 44px 0 20px; border-radius: 999px;
+  border: 1px solid var(--line); background: #fff; color: var(--ink); font: inherit; font-size: 15.5px; font-weight: 500; cursor: pointer;
+  transition: border-color 0.3s, background 0.3s, color 0.3s;
+}
+.dd::after { content: ''; position: absolute; right: 20px; top: 50%; width: 8px; height: 8px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-70%) rotate(45deg); pointer-events: none; color: var(--ink-2); }
+.dd select:hover { border-color: var(--paddy-700); }
+.dd select:focus-visible { outline: 0; border-color: var(--paddy-700); box-shadow: 0 0 0 4px rgba(13, 90, 63, 0.12); }
+.dd.on select { background: var(--paddy-900); border-color: var(--paddy-900); color: var(--ivory); }
+.dd.on::after { color: var(--gold-soft); }
+.dc-bar .wrap { justify-content: space-between; }
+@media (max-width: 900px) { .dd { flex: 1 1 100%; order: 2; } .dd select { width: 100%; } }
+
+/* ===================== Bangla page: accents in Anek instead of Latin italic ===================== */
+html[lang='bn'] .ph h1 small, html[lang='bn'] .eyebrow i, html[lang='bn'] .next small, html[lang='bn'] .tl-head p,
+html[lang='bn'] .rail-hint, html[lang='bn'] .dc-count, html[lang='bn'] .tile-no, html[lang='bn'] .tl-row .no, html[lang='bn'] .sec-head .count {
+  font-family: var(--f-display); font-style: normal;
+}
+html[lang='bn'] .ph h1 small { font-weight: 500; font-size: clamp(16px, 1.700vw, 24px); letter-spacing: 0.02em; }
+html[lang='bn'] .eyebrow i { font-size: 13.5px; font-weight: 400; letter-spacing: 0.02em; opacity: 0.75; }
+
+/* road routes on the small maps */
+.mini-map path.pass { fill: rgba(231, 211, 164, 0.16); stroke: rgba(231, 211, 164, 0.5); }
+.mini-map .route-shadow { fill: none; stroke: rgba(3, 25, 15, 0.6); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.mini-map .route { stroke-linejoin: round; }
