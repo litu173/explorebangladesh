@@ -256,3 +256,29 @@ img.fi.ld { animation: imgIn 0.8s var(--ease) both; }
 .menu-foot a { display: inline-block; padding: 8px 2px; }
 .site-footer li a { display: inline-block; padding-block: 5px; }
 .site-footer ul { gap: 0; }
+
+/* ---------- page scrollbar: an overlay that never takes width ----------
+   The native page scrollbar is hidden so the layout is the same width whether the page scrolls or not
+   (no jump between short and long pages). A custom thumb floats over the right edge on a transparent
+   rail that starts below the header. Touch screens keep their native overlay scrollbars. */
+html { scrollbar-gutter: auto; }
+html.has-sb, html.has-sb body { scrollbar-width: none; -ms-overflow-style: none; }
+html.has-sb::-webkit-scrollbar, html.has-sb body::-webkit-scrollbar { width: 0; height: 0; display: none; }
+.sb { position: fixed; z-index: 140; right: 0; top: calc(var(--header-h) + 6px); bottom: 6px; width: 14px; background: transparent; opacity: 0; transition: opacity 0.45s var(--ease); touch-action: none; }
+.sb.show, .sb:hover, .sb.drag { opacity: 1; }
+.sb[hidden] { display: none; }
+.sb-thumb {
+  position: absolute; top: 0; right: 3px; width: 6px; min-height: 36px; border-radius: 999px;
+  background: rgba(128, 128, 120, 0.62); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28);
+  transition: width 0.25s var(--ease), right 0.25s var(--ease), background 0.25s; will-change: transform; cursor: grab;
+}
+.sb:hover .sb-thumb, .sb.drag .sb-thumb { width: 9px; right: 2px; background: rgba(200, 162, 90, 0.9); }
+.sb.drag .sb-thumb { cursor: grabbing; }
+html.sb-dragging, html.sb-dragging * { user-select: none !important; }
+.menu-open .sb { opacity: 0; pointer-events: none; }
+
+/* inner scroll areas (hotel drawer, planner suggestions): thin and on a clear track */
+[data-lenis-prevent], .pl-suggest { scrollbar-width: thin; scrollbar-color: rgba(128, 128, 120, 0.55) transparent; }
+[data-lenis-prevent]::-webkit-scrollbar, .pl-suggest::-webkit-scrollbar { width: 8px; background: transparent; }
+[data-lenis-prevent]::-webkit-scrollbar-thumb, .pl-suggest::-webkit-scrollbar-thumb { background: rgba(128, 128, 120, 0.55); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+.lenis-stopped .sb { opacity: 0; pointer-events: none; }

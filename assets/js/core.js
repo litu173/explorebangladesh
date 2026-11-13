@@ -141,6 +141,52 @@
   });
   addEventListener('pageshow', (e) => { if (e.persisted) document.querySelectorAll('.page-veil').forEach((v) => v.remove()); });
 
+  /* ---- overlay scrollbar (mouse/trackpad devices): no layout width, starts below the header ---- */
+  if (fine) {
+    root.classList.add('has-sb');
+    const sb = document.createElement('div');
+    sb.className = 'sb'; sb.setAttribute('aria-hidden', 'true');
+    sb.innerHTML = '<div class="sb-thumb"></div>';
+    document.body.appendChild(sb);
+    const thumb = sb.firstChild;
+    let trackH = 0, thumbH = 0, maxScroll = 0, hideT, lastY = -1, drag = null;
+    const measureSb = () => {
+      maxScroll = Math.max(0, document.documentElement.scrollHeight - innerHeight);
+      sb.hidden = maxScroll < 4;
+      trackH = sb.clientHeight;
+      thumbH = Math.max(36, trackH * (innerHeight / (maxScroll + innerHeight)));
+      thumb.style.height = thumbH + 'px';
+      lastY = -1;
+    };
+    const show = () => { sb.classList.add('show'); clearTimeout(hideT); hideT = setTimeout(() => sb.classList.remove('show'), 1100); };
+    const pos = (y) => (maxScroll ? (y / maxScroll) * (trackH - thumbH) : 0);
+    EB.onFrame((y) => {
+      if (y === lastY) return;
+      if (lastY !== -1) show();
+      lastY = y;
+      thumb.style.transform = `translate3d(0,${pos(Math.min(y, maxScroll))}px,0)`;
+    });
+    const go = (y) => { y = EB.clamp(y, 0, maxScroll); if (lenis) lenis.scrollTo(y, { immediate: true }); else scrollTo(0, y); };
+    thumb.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      drag = { y0: e.clientY, s0: lenis ? lenis.scroll : scrollY };
+      thumb.setPointerCapture(e.pointerId); sb.classList.add('drag'); root.classList.add('sb-dragging');
+    });
+    thumb.addEventListener('pointermove', (e) => { if (drag) go(drag.s0 + (e.clientY - drag.y0) * (maxScroll / Math.max(1, trackH - thumbH))); });
+    const end = () => { drag = null; sb.classList.remove('drag'); root.classList.remove('sb-dragging'); show(); };
+    thumb.addEventListener('pointerup', end); thumb.addEventListener('pointercancel', end);
+    /* clicking the rail jumps there smoothly */
+    sb.addEventListener('pointerdown', (e) => {
+      if (e.target !== sb) return;
+      const r = sb.getBoundingClientRect(), y = ((e.clientY - r.top - thumbH / 2) / Math.max(1, trackH - thumbH)) * maxScroll;
+      EB.scrollTo(EB.clamp(y, 0, maxScroll), { duration: 0.9 });
+    });
+    measureSb();
+    addEventListener('resize', measureSb);
+    addEventListener('load', measureSb);
+    new ResizeObserver(measureSb).observe(document.body);
+  }
+
   /* ---- images fade in when they arrive (catches images added later by the page scripts too) ---- */
   const prep = (im) => {
     if (im.dataset.fi || im.closest('.preloader')) return;

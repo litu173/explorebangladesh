@@ -106,7 +106,7 @@
       ${D.map((d) => { const p = `<path data-d="${d.id}" class="${set.has(d.id) ? 'on' : pass.has(d.id) ? 'pass' : ''}" d="${d.d}"/>`; return links ? `<a href="${U.district(d.id)}" aria-label="${dn(d.id)}">${p}</a>` : p; }).join('')}
       ${extra}</svg></div>`;
   }
-  const missing = (what) => { main.innerHTML = `<section class="ph short"><div class="wrap"><h1 class="display" style="--k:1">${what}</h1><div class="ph-row" style="--k:2"><a class="btn btn-gold" href="explore.html">${T('৬৪ জেলা ঘুরে দেখুন', 'Explore the 64 districts')}</a></div></div></section>`; };
+  const missing = (what) => { document.title = `${what} — ${SITE_NAME}`; main.innerHTML = `<section class="ph short"><div class="wrap"><h1 class="display" style="--k:1">${what}</h1><div class="ph-row" style="--k:2"><a class="btn btn-gold" href="explore.html">${T('৬৪ জেলা ঘুরে দেখুন', 'Explore the 64 districts')}</a></div></div></section>`; };
 
   /* =================== pages =================== */
   const pages = {
