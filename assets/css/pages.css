@@ -559,3 +559,15 @@ html[lang='bn'] .eyebrow i { font-size: 13.5px; font-weight: 400; letter-spacing
 .mini-map path.pass { fill: rgba(231, 211, 164, 0.16); stroke: rgba(231, 211, 164, 0.5); }
 .mini-map .route-shadow { fill: none; stroke: rgba(3, 25, 15, 0.6); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
 .mini-map .route { stroke-linejoin: round; }
+
+/* trip stops line up with the cover, the intro and every other section: content starts at the .wrap edge,
+   and the timeline rail sits in the margin just left of it */
+.stops { --edge: calc((100% - min(100%, 1360px)) / 2 + var(--gutter)); }
+.stops-rail { left: calc(var(--edge) - 34px); }
+.stop { max-width: none; padding-left: var(--edge); padding-right: var(--edge); }
+.stop::before { left: calc(var(--edge) - 39px); }
+@media (max-width: 900px) {
+  .stops-rail { left: var(--gutter); }
+  .stop { padding-left: calc(var(--gutter) + 26px); padding-right: var(--gutter); }
+  .stop::before { left: calc(var(--gutter) - 5px); }
+}
