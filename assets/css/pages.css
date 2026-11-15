@@ -609,3 +609,8 @@ html[lang='bn'] .eyebrow i { font-size: 13.5px; font-weight: 400; letter-spacing
   .ctx-step { grid-column: auto; min-width: 0; }
   .ctx-step a { min-width: 0; }
 }
+/* seasons: the back link sits on its own line, with the section label under it */
+.sz-top { align-items: flex-start; }
+.sz-top-l { flex-direction: column; align-items: flex-start; gap: 12px; }
+.sz-grid { inset: calc(var(--header-h) + 96px) 0 84px 0; }
+@media (max-width: 900px) { .sz-grid { inset: calc(var(--header-h) + 92px) 0 76px 0; } }
