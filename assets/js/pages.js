@@ -38,6 +38,7 @@
     <section class="ph${short ? ' short' : ''}">
       <div class="ph-media"><img src="${pic(img, mx, 1920)}" alt="" fetchpriority="high"></div>
       <div class="wrap">
+        ${backLink()}
         ${crumbs ? `<nav class="crumbs" style="--k:0" aria-label="${T('আপনি এখানে', 'You are here')}">${crumbs.map(([t, h]) => (h ? `<a href="${h}">${t}</a>` : `<b>${t}</b>`)).join('<span>/</span>')}</nav>` : ''}
         ${chip ? `<span class="chip t-${chip}" style="--k:1">${TYPE[chip].name}</span>` : ''}
         <h1 class="display${String(title).replace(/<[^>]+>/g, '').length > (EB.EN ? 22 : 16) ? ' long' : ''}" style="--k:2">${small ? `<small>${esc(small)}</small>` : ''}${title}</h1>
@@ -45,6 +46,12 @@
         ${extra || ''}
       </div>
     </section>`;
+  /* "← Back to <where you came from>" — the same destination as the header's back button */
+  const backLink = (cls) => EB.nav.link(cls).replace('data-back', 'data-back style="--k:0"');
+  /* filters live in the address and the number of loaded tiles is remembered, so Back returns to the same view */
+  const setUrl = (params) => { const p = new URLSearchParams(); Object.entries(params).forEach(([k, v]) => { if (v) p.set(k, v); }); const qs = p.toString(); history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '')); };
+  const saveN = (n) => { try { sessionStorage.setItem('eb-n:' + EB.nav.u(), String(n)); } catch (e) { /* ignore */ } };
+  const savedN = () => { try { return EB.restoring ? +sessionStorage.getItem('eb-n:' + EB.nav.u()) || 0 : 0; } catch (e) { return 0; } };
   const tile = (g, i, o) => `
     <a class="tile t-${g.type}${o && o.cls ? ' ' + o.cls : ''}" href="${U.guide(g.id)}" data-cursor="${TYPE[g.type].cur}" style="--i:${i % 8}">
       <img src="${pic(g.img, g.mx, o && o.big ? 1280 : 800)}" alt="" loading="lazy" decoding="async">
@@ -117,6 +124,7 @@
         <section class="tl" id="tl">
           <div class="tl-bg" aria-hidden="true">${TRIPS.map((t, i) => `<img src="${pic(t.img, t.mx, 1920)}" alt="" ${i > 1 ? 'loading="lazy"' : ''}>`).join('')}</div>
           <header class="wrap tl-head" data-lines>
+            ${backLink().replace('class="back-link"', 'class="back-link" data-reveal')}
             <span class="eyebrow" data-reveal>${T('রেডিমেড ট্রিপ', 'Ready-made trips')} <i>${T(`${bn(TRIPS.length)}টি সাজানো রুট`, `${TRIPS.length} curated routes`)}</i></span>
             <h1 class="display"><span class="ln" style="--i:0;--d:600ms"><span>${T('ট্রিপ সাজানোই আছে।', 'The trip is planned.')}</span></span><span class="ln" style="--i:1;--d:600ms"><span><em>${T('শুধু বেরিয়ে পড়ুন।', 'Just go.')}</em></span></span></h1>
             <p data-reveal style="--d:900ms">${T('স্ক্রল করে ঘুরে দেখুন', 'scroll to travel')}</p>
@@ -164,13 +172,13 @@
           <div class="stops-rail" aria-hidden="true"><i></i><span class="stops-sun"></span></div>
           ${stops.map((s, i) => `
             <article class="stop">
-              <a class="stop-ph" href="${U.guide(s.id)}" data-cursor="${T('দেখুন', 'View')}"><img src="${pic(s.img, s.mx, 1280)}" alt="${esc(s.t)}" loading="lazy" decoding="async"></a>
+              <a class="stop-ph" href="${U.guide(s.id)}&trip=${t.id}" data-cursor="${T('দেখুন', 'View')}"><img src="${pic(s.img, s.mx, 1280)}" alt="${esc(s.t)}" loading="lazy" decoding="async"></a>
               <div class="stop-tx">
                 <span class="stop-n" aria-hidden="true">${bn(two(i + 1))}</span>
                 <small>${dn(s.d)}</small>
                 <h3>${esc(s.t)}</h3>
                 <p>${esc(s.s)}</p>
-                <a class="link-arrow" href="${U.guide(s.id)}">${T('জায়গাটা দেখুন', 'See this place')} <span class="arr">→</span></a>
+                <a class="link-arrow" href="${U.guide(s.id)}&trip=${t.id}">${T('জায়গাটা দেখুন', 'See this place')} <span class="arr">→</span></a>
               </div>
             </article>`).join('')}
         </section>
@@ -281,9 +289,25 @@
       if (!g) return missing(T('জায়গাটা খুঁজে পাইনি', 'We couldn’t find that place'));
       const info = INFO[g.d];
       document.title = `${g.t} — ${dn(g.d)} — ${SITE_NAME}`;
+      /* opened from a ready-made trip: keep the trip in view — crumbs follow the trip, and you can step to the next stop */
+      const trip = TRIPS.find((x) => x.id === q.get('trip') && x.stops.includes(g.id)) || null;
+      const tStops = trip ? trip.stops.filter((x) => gById[x]) : [], ti = tStops.indexOf(g.id);
+      const stepTo = (k) => `${U.guide(tStops[k])}&trip=${trip.id}`;
+      const crumbs = trip
+        ? [[T('রেডিমেড ট্রিপ', 'Ready-made trips'), 'trips.html'], [esc(trip.t), U.trip(trip.id)], [T(`${bn(ti + 1)} নম্বর জায়গা`, `Stop ${ti + 1}`)]]
+        : [[T('৬৪ জেলা', '64 districts'), 'explore.html'], [dn(g.d), U.district(g.d)], [TYPE[g.type].name, U.list(g.type)]];
+      const ctx = trip ? `
+        <nav class="ctx" aria-label="${T('এই ট্রিপের জায়গা', 'Stops on this trip')}"><div class="wrap">
+          <a class="ctx-trip" href="${U.trip(trip.id)}"><small>${T('আপনি এই ট্রিপে আছেন', 'You’re on this trip')}</small><b>${esc(trip.t)}: ${esc(trip.s)}</b></a>
+          <div class="ctx-dots" aria-hidden="true">${tStops.map((x, k) => `<i class="${k === ti ? 'on' : k < ti ? 'done' : ''}"></i>`).join('')}</div>
+          <div class="ctx-step">
+            ${ti > 0 ? `<a href="${stepTo(ti - 1)}" data-replace><span class="arr">←</span><span><small>${T('আগের জায়গা', 'Previous stop')}</small>${esc(gById[tStops[ti - 1]].t)}</span></a>` : '<span></span>'}
+            ${ti < tStops.length - 1 ? `<a class="next-stop" href="${stepTo(ti + 1)}" data-replace><span><small>${T('পরের জায়গা', 'Next stop')}</small>${esc(gById[tStops[ti + 1]].t)}</span><span class="arr">→</span></a>` : `<a class="next-stop" href="${U.trip(trip.id)}"><span><small>${T('শেষ জায়গা', 'Last stop')}</small>${T('ট্রিপে ফিরুন', 'Back to the trip')}</span><span class="arr">→</span></a>`}
+          </div>
+        </div></nav>` : '';
       main.innerHTML = hero({
-        img: g.img, mx: g.mx, crumbs: [[T('৬৪ জেলা', '64 districts'), 'explore.html'], [dn(g.d), U.district(g.d)], [TYPE[g.type].name, U.list(g.type)]], chip: g.type, small: dn(g.d), title: esc(g.t), sub: g.s,
-      }) + '<div id="g-body"></div>';
+        img: g.img, mx: g.mx, crumbs, chip: g.type, small: dn(g.d), title: esc(g.t), sub: g.s,
+      }) + ctx + '<div id="g-body"></div>';
       let det = {};
       try { det = (await (await fetch(`${EB.base}assets/data/${EB.EN ? 'guide-en' : 'guide'}/${g.d}.json`)).json())[g.id] || {}; } catch (e) { /* show what we have */ }
       const blocks = det.blocks || [];
@@ -313,6 +337,7 @@
         ${trips.length ? `<section class="sec dark">${head(T('রেডিমেড ট্রিপ', 'Ready-made trips'), T('এই পথে', 'on this route'), [T('এই জায়গাসহ', 'Trips that'), T('সাজানো ট্রিপ', 'include it')])}<div class="wrap more-trips">${trips.slice(0, 3).map(tripTile).join('')}</div></section>` : ''}
         ${more.length ? `<section class="sec cream">${head(near.length ? T('কাছাকাছি', 'Nearby') : dn(g.d), T('আশেপাশে', 'close by'), [T('এর পাশেই', 'More to see'), T('আরও যা আছে', 'nearby')], `<a class="link-arrow" href="${U.district(g.d)}" data-reveal>${T(`${dn(g.d)} জেলা`, `${dn(g.d)} district`)} <span class="arr">→</span></a>`)}<div class="wrap cards4">${more.map((x, i) => tile(x, i)).join('')}</div></section>` : ''}`;
       after();
+      EB.restoreScroll();
     },
 
     /* ---- galleries: places, foods, hidden, traditions ---- */
@@ -337,12 +362,14 @@
         </div></div>
         <section class="sec" style="padding-top:36px"><div class="wrap"><p class="dc-count" id="dc-count"></p><div class="dc-grid" id="dc-grid"></div><div id="dc-more" style="height:1px"></div></div></section>`;
       const grid = $('#dc-grid'), sentinel = $('#dc-more'), countEl = $('#dc-count'), sel = $('#dc-div');
-      let list = all, shown = 0, div = '', term = '';
+      let list = all, shown = 0, div = divById[q.get('div')] ? q.get('div') : '', term = q.get('q') || '';
+      const wantN = savedN();
+      sel.value = div; $('#dc-q').value = term;
       const tileIo = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); tileIo.unobserve(e.target); } }), { rootMargin: '0px 0px -6% 0px' });
       const more = () => {
         const next = list.slice(shown, shown + 20); if (!next.length) return;
         grid.insertAdjacentHTML('beforeend', next.map((g, k) => tile(g, shown + k, { cls: (shown + k) % 9 === 0 && g.mx >= 1280 ? 'wide' : '', big: (shown + k) % 9 === 0 })).join(''));
-        shown += next.length;
+        shown += next.length; saveN(shown);
         $$('.tile:not(.in)', grid).forEach((t) => tileIo.observe(t));
         if (EB.lenis) EB.lenis.resize();
       };
@@ -352,6 +379,7 @@
         grid.innerHTML = list.length ? '' : `<p class="dc-empty">${T('এই নামে কিছু পাইনি।', 'Nothing found by that name.')}</p>`; shown = 0;
         countEl.textContent = T(`${bn(list.length)}টি`, `${list.length} ${list.length === 1 ? 'entry' : 'entries'}`);
         sel.closest('.dd').classList.toggle('on', !!div);
+        setUrl({ type: Ty.list, div, q: term.trim() });
         more();
       };
       new IntersectionObserver((es) => { if (es[0].isIntersecting) more(); }, { rootMargin: '900px' }).observe(sentinel);
@@ -364,6 +392,7 @@
       const bar = $('.dc-bar'), hd = $('.site-header');
       EB.onFrame(() => bar.classList.toggle('shift', bar.getBoundingClientRect().top <= 1 && !hd.classList.contains('is-hidden')));
       apply();
+      while (shown < wantN && shown < list.length) more();
     },
 
     /* ---- where to stay: pick a budget, the map and every district re-price themselves ---- */
@@ -373,13 +402,13 @@
       const TIERS = [['budget', T('সাধারণ হোটেল', 'Budget')], ['mid', T('ভালো হোটেল', 'Mid-range')], ['upscale', T('অভিজাত রিসোর্ট', 'Upscale')]];
       const price = (id, k) => { const row = (INFO[id].stay || [])[TIERS.findIndex((t) => t[0] === k)]; return row ? row[1] : ''; };
       const low = (id, k) => { const p = price(id, k); return p ? toNum(p) : Infinity; };
-      let tier = 'budget', sort = 'price', term = '';
+      let tier = ['budget', 'mid', 'upscale'].includes(q.get('tier')) ? q.get('tier') : 'budget', sort = q.get('sort') === 'div' ? 'div' : 'price', term = '';
       main.innerHTML = hero({
         img: S.hero, mx: 1920, short: true, small: T('৬৪ জেলার রুম ভাড়া', 'room rates in 64 districts'), title: T('কোথায় <em>থাকবেন</em>', 'Where to <em>stay</em>'), sub: T('বাজেট বেছে নিন, ম্যাপ নিজেই বদলে যাবে।', 'Pick a budget and the map re-colours itself.'),
       }) + `
         <div class="dc-bar"><div class="wrap">
           <div class="seg" id="st-tier" role="radiogroup" aria-label="${T('হোটেলের মান', 'Hotel class')}">${TIERS.map((t) => `<button type="button" role="radio" data-k="${t[0]}" aria-checked="${t[0] === tier}">${t[1]}</button>`).join('')}</div>
-          <div class="dc-pills" style="justify-content:flex-end"><button class="pill" type="button" data-sort="price" aria-pressed="true">${T('কম ভাড়া আগে', 'Cheapest first')}</button><button class="pill" type="button" data-sort="div" aria-pressed="false">${T('বিভাগ ধরে', 'By division')}</button></div>
+          <div class="dc-pills" style="justify-content:flex-end"><button class="pill" type="button" data-sort="price" aria-pressed="${sort === 'price'}">${T('কম ভাড়া আগে', 'Cheapest first')}</button><button class="pill" type="button" data-sort="div" aria-pressed="${sort === 'div'}">${T('বিভাগ ধরে', 'By division')}</button></div>
           <input class="dc-search" id="st-q" type="search" placeholder="${T('জেলার নাম লিখুন', 'Search a district')}" aria-label="${T('জেলা খুঁজুন', 'Search a district')}">
         </div></div>
         <section class="sec" style="padding-top:44px">
@@ -424,6 +453,7 @@
         requestAnimationFrame(() => $$('.st-tile', grid).forEach((el) => el.classList.add('in')));
         $('#st-rail').innerHTML = Object.entries(S.h).filter(([, h]) => h.tier === tier).map(([id, h]) => hotelCard(id, h)).join('') || `<p class="dc-empty" style="color:rgba(246,241,231,.6)">${T('এই মানের হোটেলের নাম এখনও যোগ হয়নি।', 'No named hotels in this class yet.')}</p>`;
         fitRails();
+        setUrl({ tier: tier === 'budget' ? '' : tier, sort: sort === 'price' ? '' : sort });
         if (EB.lenis) EB.lenis.resize();
       }
       /* drawer with one district's prices and named hotels */
@@ -462,8 +492,9 @@
       $('#st-q').addEventListener('input', (e) => { term = e.target.value; paint(); });
       const bar = $('.dc-bar'), hd = $('.site-header');
       EB.onFrame(() => bar.classList.toggle('shift', bar.getBoundingClientRect().top <= 1 && !hd.classList.contains('is-hidden')));
+      const openD = q.get('d');
       paint();
-      if (INFO[q.get('d')]) setTimeout(() => open(q.get('d')), 900);
+      if (INFO[openD] && !EB.restoring) setTimeout(() => open(openD), 900);
     },
 
     /* ---- one hotel: rooms as cards, one clear way to get in touch ---- */
@@ -617,7 +648,7 @@
           <div class="sz-stage">
             <div class="sz-sky" aria-hidden="true"></div>
             <div class="sz-fx" aria-hidden="true">${Array.from({ length: 30 }, (_, i) => `<i style="--x:${(i * 37 + 7) % 100};--dl:${-((i * 53) % 90) / 10}s;--sp:${0.7 + ((i * 29) % 60) / 100};--sz:${0.6 + ((i * 17) % 80) / 100}"></i>`).join('')}</div>
-            <div class="sz-top wrap"><span class="eyebrow">${T('ষড়ঋতুর দেশ', 'Land of six seasons')} <i>${T('বছর ঘোরে', 'the year turns')}</i></span><span class="jr-count"><b id="sz-n">${bn('01')}</b><i>/ ${bn('06')}</i></span></div>
+            <div class="sz-top wrap"><div class="sz-top-l">${backLink('plain')}<span class="eyebrow">${T('ষড়ঋতুর দেশ', 'Land of six seasons')} <i>${T('বছর ঘোরে', 'the year turns')}</i></span></div><span class="jr-count"><b id="sz-n">${bn('01')}</b><i>/ ${bn('06')}</i></span></div>
             <div class="wrap sz-grid">
               <div class="sz-texts">${SS.map((s, i) => `
                 <article class="sz-text" data-i="${i}">
@@ -668,12 +699,14 @@
 
       /* ----- everything for one season ----- */
       const grid = $('#sz-gridl'), sentinel = $('#sz-more');
-      let season = cur, type = '', items = [], shown = 0;
+      const sIdx = SS.findIndex((x) => x.key === q.get('s'));
+      let season = sIdx > -1 ? sIdx : cur, type = TYPE[q.get('t')] ? q.get('t') : '', items = [], shown = 0;
+      const wantN = savedN();
       const tileIo = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); tileIo.unobserve(e.target); } }), { rootMargin: '0px 0px -6% 0px' });
       const more = () => {
         const next = items.slice(shown, shown + 20); if (!next.length) return;
         grid.insertAdjacentHTML('beforeend', next.map((g, k) => tile(g, shown + k, { cls: (shown + k) % 9 === 0 && g.mx >= 1280 ? 'wide' : '', big: (shown + k) % 9 === 0 })).join(''));
-        shown += next.length; $$('.tile:not(.in)', grid).forEach((t) => tileIo.observe(t)); if (EB.lenis) EB.lenis.resize();
+        shown += next.length; saveN(shown); $$('.tile:not(.in)', grid).forEach((t) => tileIo.observe(t)); if (EB.lenis) EB.lenis.resize();
       };
       const apply = () => {
         items = list[SS[season].key].filter((g) => !type || g.type === type);
@@ -681,6 +714,8 @@
         $('#sz-count').textContent = T(`${L(SS[season].name)} · ${bn(items.length)}টি`, `${items.length} for ${L(SS[season].name).toLowerCase()}`);
         $$('#sz-season button').forEach((b) => b.setAttribute('aria-checked', String(+b.dataset.i === season)));
         $('#sz-bar').style.setProperty('--tint', SS[season].tint);
+        $$('#sz-bar [data-t]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.t === type)));
+        setUrl({ s: season === cur ? '' : SS[season].key, t: type });
         more();
       };
       new IntersectionObserver((es) => { if (es[0].isIntersecting) more(); }, { rootMargin: '900px' }).observe(sentinel);
@@ -691,10 +726,12 @@
       const bar = $('#sz-bar'), hd = $('.site-header');
       EB.onFrame(() => bar.classList.toggle('shift', bar.getBoundingClientRect().top <= 1 && !hd.classList.contains('is-hidden')));
       apply();
+      while (shown < wantN && shown < items.length) more();
       measure(); setActive(0);
       addEventListener('resize', measure); addEventListener('load', measure);
       /* open on the season that is happening right now */
-      if (cur > 0 && !EB.reduce) setTimeout(() => { measure(); if ((EB.lenis ? EB.lenis.scroll : scrollY) < 40) EB.scrollTo(top + ((cur + 0.5) / N) * dist, { duration: 2.6 }); }, 1300);
+      if (EB.restoring) { /* coming back: stay where the visitor was */ }
+      else if (cur > 0 && !EB.reduce) setTimeout(() => { measure(); if ((EB.lenis ? EB.lenis.scroll : scrollY) < 40) EB.scrollTo(top + ((cur + 0.5) / N) * dist, { duration: 2.6 }); }, 1300);
       else if (cur > 0) { measure(); scrollTo(0, top + ((cur + 0.5) / N) * dist); }
     },
   };

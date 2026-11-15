@@ -330,6 +330,8 @@
   });
   $('#pn-print').addEventListener('click', () => print());
 
+  if (EB.nav.prev && EB.nav.prev.u.split('?')[0] !== 'index.html') $('.pn-back').insertAdjacentHTML('beforebegin', EB.nav.link());
+
   /* ---------- go ---------- */
   const crafting = $('#crafting');
   if (!state.to.length) {

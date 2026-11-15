@@ -571,3 +571,41 @@ html[lang='bn'] .eyebrow i { font-size: 13.5px; font-weight: 400; letter-spacing
   .stop { padding-left: calc(var(--gutter) + 26px); padding-right: var(--gutter); }
   .stop::before { left: calc(var(--gutter) - 5px); }
 }
+
+/* ===================== back link + trip context ===================== */
+.ph .back-link { margin-bottom: 4px; }
+.tl-head .back-link { justify-self: start; }
+.ctx { background: var(--paddy-950); color: var(--ivory); border-top: 1px solid var(--line-light); }
+.ctx .wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.300fr); align-items: center; gap: 18px clamp(18px, 3vw, 44px); padding-block: 16px; }
+.ctx small { display: block; font-size: 13px; font-weight: 400; letter-spacing: 0.03em; color: var(--gold-soft); opacity: 0.9; }
+.ctx-trip b { display: block; font-family: var(--f-display); font-weight: 500; font-size: 18px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx-trip:hover b { color: var(--gold-soft); }
+.ctx-dots { display: flex; align-items: center; gap: 7px; }
+.ctx-dots i { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(231, 211, 164, 0.6); }
+.ctx-dots i.done { background: rgba(231, 211, 164, 0.6); }
+.ctx-dots i.on { width: 12px; height: 12px; background: var(--sun); border-color: var(--sun); box-shadow: 0 0 0 4px rgba(226, 50, 63, 0.22); }
+.ctx-step { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ctx-step a { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 9px 16px; border-radius: 16px; border: 1px solid var(--line-light); font-size: 16px; font-weight: 500; line-height: 1.35; transition: background 0.35s var(--ease), color 0.35s, border-color 0.35s; }
+.ctx-step a > span:not(.arr) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx-step a.next-stop { justify-content: flex-end; text-align: right; background: var(--gold); border-color: var(--gold); color: var(--paddy-950); }
+.ctx-step a.next-stop small { color: var(--paddy-900); }
+.ctx-step a:hover { background: var(--ivory); border-color: var(--ivory); color: var(--paddy-950); }
+.ctx-step a:hover small { color: var(--paddy-900); }
+.ctx-step .arr { flex: none; transition: transform 0.4s var(--ease); }
+.ctx-step a:hover .arr { transform: translateX(-4px); }
+.ctx-step a.next-stop:hover .arr { transform: translateX(4px); }
+@media (max-width: 900px) {
+  .ctx .wrap { grid-template-columns: 1fr auto; }
+  .ctx-step { grid-column: 1 / -1; }
+  .ctx-step a { padding: 8px 12px; font-size: 14.5px; }
+}
+
+.sz-top-l { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; min-width: 0; }
+.sz-top .back-link { font-size: 14px; padding: 5px 14px 5px 9px; }
+.ctx { overflow: clip; }
+@media (max-width: 900px) {
+  .ctx .wrap { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .ctx-dots { flex-wrap: wrap; }
+  .ctx-step { grid-column: auto; min-width: 0; }
+  .ctx-step a { min-width: 0; }
+}

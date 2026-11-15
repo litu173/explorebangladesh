@@ -137,7 +137,10 @@
     veil.className = 'page-veil';
     document.body.appendChild(veil);
     requestAnimationFrame(() => requestAnimationFrame(() => veil.classList.add('on')));
-    setTimeout(() => { location.href = a.href; }, 460);
+    /* stepping sideways (next stop on a trip) replaces this page in the history, so Back still leads out of the trip */
+    const side = a.hasAttribute('data-replace');
+    if (side) { try { sessionStorage.setItem('eb-replace', '1'); } catch (err) { /* ignore */ } }
+    setTimeout(() => { if (side) location.replace(a.href); else location.href = a.href; }, 460);
   });
   addEventListener('pageshow', (e) => { if (e.persisted) document.querySelectorAll('.page-veil').forEach((v) => v.remove()); });
 
@@ -186,6 +189,23 @@
     addEventListener('load', measureSb);
     new ResizeObserver(measureSb).observe(document.body);
   }
+
+  /* ---- going back puts you where you were: remember the scroll position of every page, restore it on return ---- */
+  try { history.scrollRestoration = 'manual'; } catch (e) { /* older browsers */ }
+  const yKey = () => 'eb-y:' + (EB.nav ? EB.nav.u() : location.pathname + location.search);
+  const saveY = () => { try { sessionStorage.setItem(yKey(), String(Math.round(lenis ? lenis.scroll : scrollY))); } catch (e) { /* ignore */ } };
+  addEventListener('pagehide', saveY);
+  document.addEventListener('click', (e) => { if (e.target.closest('a[href]')) saveY(); }, true);
+  let wantY = 0, touched = false;
+  if (EB.nav && EB.nav.isBack) { try { wantY = +sessionStorage.getItem(yKey()) || 0; } catch (e) { /* ignore */ } }
+  EB.restoring = wantY > 0;
+  ['wheel', 'touchstart', 'keydown', 'pointerdown'].forEach((ev) => addEventListener(ev, () => { touched = true; }, { passive: true, once: true }));
+  EB.restoreScroll = () => {
+    if (!wantY || touched) return;
+    const y = Math.min(wantY, document.documentElement.scrollHeight - innerHeight);
+    if (lenis) { lenis.resize(); lenis.scrollTo(y, { immediate: true, force: true }); } else scrollTo(0, y);
+  };
+  if (wantY) { [0, 150, 450, 1000, 1800].forEach((t) => setTimeout(EB.restoreScroll, t)); addEventListener('load', EB.restoreScroll); }
 
   /* ---- images fade in when they arrive (catches images added later by the page scripts too) ---- */
   const prep = (im) => {

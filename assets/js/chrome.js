@@ -11,6 +11,62 @@
       document.querySelectorAll(`[${a}]`).forEach((el) => el.setAttribute(p, el.getAttribute(a))));
   }
 
+  /* ---------- the journey trail: remembers how the visitor got here, so "back" always means "where I came from" ----------
+     Stored per browser tab as a list of page addresses (language-independent: file + query). Labels are worked out
+     from the data, so they follow the page language. */
+  const file = () => location.pathname.split('/').pop() || 'index.html';
+  const here_u = () => file() + location.search;
+  const KEY = 'eb-trail';
+  const read = () => { try { return JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+  const write = (t) => { try { sessionStorage.setItem(KEY, JSON.stringify(t.slice(-30))); } catch (e) { /* ignore */ } };
+  const flag = (k) => { try { const v = sessionStorage.getItem(k); sessionStorage.removeItem(k); return v; } catch (e) { return null; } };
+  const TYPES = { places: ['ঘোরার জায়গা', 'Places'], foods: ['খাবার', 'Food'], hidden: ['অচেনা জায়গা', 'Hidden places'], traditions: ['ঐতিহ্য', 'Traditions'] };
+  const label = (u) => {
+    const [f, qs] = u.split('?'), p = new URLSearchParams(qs || ''), id = p.get('id');
+    const trip = (window.EB_TRIPS || []).find((t) => t.id === id), g = EB.guide(id), h = ((window.EB_STAY || {}).h || {})[id];
+    return ({
+      'index.html': T('হোম', 'Home'), 'plan.html': T('ট্রিপ প্ল্যান', 'Trip plan'), 'trips.html': T('রেডিমেড ট্রিপ', 'Ready-made trips'),
+      'trip.html': trip ? T(`${trip.t} ট্রিপ`, `${trip.t} trip`) : T('ট্রিপ', 'Trip'), 'explore.html': T('৬৪ জেলা', '64 districts'), 'district.html': id ? EB.dname(id) : T('জেলা', 'District'),
+      'guide.html': g ? g.t : T('গাইড', 'Guide'), 'discover.html': L(TYPES[p.get('type')] || TYPES.places), 'hotels.html': T('হোটেল', 'Hotels'),
+      'hotel.html': h ? h.t : T('হোটেল', 'Hotel'), 'map.html': T('আমার ভ্রমণ ম্যাপ', 'My travel map'), 'seasons.html': T('ষড়ঋতু', 'Six seasons'),
+    })[f] || T('আগের পাতা', 'Previous page');
+  };
+  /* where a page lives when the visitor landed on it directly (no trail yet) */
+  const parent = (u) => {
+    const [f, qs] = u.split('?'), id = new URLSearchParams(qs || '').get('id'), g = EB.guide(id);
+    if (f === 'index.html') return null;
+    return ({ 'guide.html': g ? `district.html?id=${g.d}` : 'explore.html', 'district.html': 'explore.html', 'trip.html': 'trips.html', 'hotel.html': 'hotels.html' })[f] || 'index.html';
+  };
+  let trail = read();
+  const cur = here_u();
+  const navType = (performance.getEntriesByType('navigation')[0] || {}).type;
+  const cameBack = navType === 'back_forward' || flag('eb-back') === cur;
+  const at = trail.lastIndexOf(cur);
+  if (cameBack && at > -1) trail = trail.slice(0, at + 1);          // went back: drop everything after this page
+  else if (flag('eb-replace') && trail.length) trail[trail.length - 1] = cur; // stepped sideways (next stop on a trip)
+  else if (trail[trail.length - 1] !== cur) trail.push(cur);
+  write(trail);
+  const prevU = trail.length > 1 ? trail[trail.length - 2] : parent(cur);
+  EB.nav = { u: here_u, isBack: cameBack && at > -1, prev: prevU ? { u: prevU, label: label(prevU), fromTrail: trail.length > 1 } : null, label };
+  /* pages that keep their filters in the address (plan, galleries) update the trail when the address changes */
+  const rs = history.replaceState.bind(history);
+  history.replaceState = (...a) => { rs(...a); const t = read(); if (t.length) { t[t.length - 1] = here_u(); write(t); } };
+  /* coming back to a page the browser kept alive: bring the stored trail back in line */
+  addEventListener('pageshow', (e) => { if (!e.persisted) return; const t = read(), i = t.lastIndexOf(here_u()); if (i > -1) write(t.slice(0, i + 1)); });
+  const ARROW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.500 5.500L8 12l6.500 6.500" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  EB.nav.link = (cls) => (EB.nav.prev ? `<a class="back-link${cls ? ' ' + cls : ''}" data-back href="${EB.nav.prev.u}">${ARROW}<span><small>${T('ফিরে যান:', 'Back to')}</small> ${EB.nav.prev.label.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])}</span></a>` : '');
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-back]'); if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+    e.preventDefault(); e.stopPropagation();
+    const target = EB.nav.prev.u;
+    try { sessionStorage.setItem('eb-back', target); } catch (err) { /* ignore */ }
+    let viaHistory = false;
+    try { const r = new URL(document.referrer); viaHistory = r.origin === location.origin && (r.pathname.split('/').pop() || 'index.html') + r.search === target && history.length > 1; } catch (err) { /* no referrer */ }
+    const veil = document.createElement('div'); veil.className = 'page-veil'; document.body.appendChild(veil);
+    requestAnimationFrame(() => requestAnimationFrame(() => veil.classList.add('on')));
+    setTimeout(() => { if (viaHistory) history.back(); else location.href = target; }, EB.reduce ? 0 : 380);
+  }, true);
+
   const nav = [
     ['trips.html', ['রেডিমেড ট্রিপ', 'Ready-made trips'], ['trips', 'trip']],
     ['explore.html', ['৬৪ জেলা', '64 districts'], ['explore', 'district']],
